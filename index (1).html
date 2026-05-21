@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pilotage Logistique National</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0A1628;--ink:#1C2333;--surf:#EEF1F7;--card:#fff;--brd:#DDE3EE;--t1:#1C2333;--t2:#4B5675;--t3:#8A94A8;--gr:#16A34A;--grl:#DCFCE7;--am:#D97706;--aml:#FEF3C7;--rd:#DC2626;--rdl:#FEE2E2;--bl:#2563EB;--bll:#EFF6FF;--tl:#0D9488;--tll:#F0FDFA;--pu:#7C3AED;--pul:#F5F3FF;--gy:#6B7280;--gyl:#F3F4F6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--t1);min-height:100vh}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0A1628,#1B3A6B);display:flex;align-items:center;justify-content:center;z-index:9999}
+.lbox{background:#fff;border-radius:20px;padding:38px;width:380px;box-shadow:0 32px 100px rgba(0,0,0,.5)}
+.llogo{text-align:center;margin-bottom:26px}
+.llogo-ico{font-size:36px;margin-bottom:8px}
+.llogo-t{font-size:18px;font-weight:700;color:#0A1628}
+.llogo-s{font-size:11px;color:#8A94A8;margin-top:3px}
+.ltabs{display:flex;background:#EEF1F7;border-radius:10px;padding:3px;margin-bottom:20px}
+.ltab{flex:1;padding:8px;text-align:center;font-size:12.5px;font-weight:500;border-radius:8px;cursor:pointer;color:#8A94A8;transition:all .15s}
+.ltab.on{background:#fff;color:#0A1628;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.lf{margin-bottom:14px}
+.lf label{display:block;font-size:11.5px;font-weight:600;color:#4B5675;margin-bottom:5px}
+.lf input{width:100%;padding:10px 13px;border:1.5px solid #DDE3EE;border-radius:9px;font-size:13.5px;font-family:inherit;outline:none;color:#1C2333}
+.lf input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.lbtn{width:100%;padding:12px;background:#2563EB;color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+.lbtn:hover{background:#1D4ED8}
+.lerr{color:#DC2626;font-size:12px;margin-top:10px;text-align:center;min-height:18px;font-weight:500}
+
+/* NAV */
+#appnav{background:var(--navy);display:none;align-items:center;padding:0 20px;height:52px;position:sticky;top:0;z-index:100;gap:0}
+.nlogo{color:#fff;font-weight:700;font-size:13.5px;margin-right:24px;white-space:nowrap}
+.nlogo span{color:#60A5FA}
+.ntabs{display:flex;gap:1px;flex:1;overflow-x:auto}
+.ntab{padding:0 13px;height:52px;display:flex;align-items:center;color:#8A94A8;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;background:none;border-left:none;border-right:none;border-top:none;white-space:nowrap;font-family:inherit;transition:all .15s}
+.ntab:hover{color:#fff}.ntab.on{color:#fff;border-bottom-color:#60A5FA}
+.nright{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nbw{background:#1D3461;color:#93C5FD;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;font-family:'DM Mono',monospace}
+.upill{background:rgba(255,255,255,.08);color:#93C5FD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:6px}
+.rbadge{background:#1e3a5f;color:#60A5FA;padding:1px 6px;border-radius:10px;font-size:9.5px;font-weight:700}
+.rbadge.adm{background:#2d1b69;color:#a78bfa}
+.nout{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit}
+.nout:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+
+/* LAYOUT */
+.page{display:none;padding:20px 24px;max-width:1600px;margin:0 auto}
+.page.on{display:block}
+
+/* KPI CARDS */
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.kcard{background:var(--card);border-radius:13px;padding:17px 17px 15px;border:1px solid var(--brd);position:relative;overflow:hidden}
+.kacc{position:absolute;left:0;top:0;bottom:0;width:4px}
+.klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:8px}
+.kval{font-size:25px;font-weight:700;letter-spacing:-.03em;line-height:1;margin-bottom:4px}
+.ksub{font-size:11.5px;color:var(--t3)}
+.kg .kacc{background:var(--gr)}.kg .kval{color:var(--gr)}
+.kam .kacc{background:var(--am)}.kam .kval{color:var(--am)}
+.krd .kacc{background:var(--rd)}.krd .kval{color:var(--rd)}
+.kbl .kacc{background:var(--bl)}.kbl .kval{color:var(--bl)}
+.ktl .kacc{background:var(--tl)}.ktl .kval{color:var(--tl)}
+.kpu .kacc{background:var(--pu)}.kpu .kval{color:var(--pu)}
+
+/* OVERDUE */
+.ovgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.ovcard{border-radius:12px;padding:15px}
+.ovcard-rd{background:var(--rdl)}.ovcard-am{background:var(--aml)}.ovcard-bl{background:var(--bll)}.ovcard-gy{background:var(--gyl)}
+.ovlbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}
+.ovn{font-size:28px;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:3px}
+.ovs{font-size:11px}
+.ovcard-rd .ovlbl,.ovcard-rd .ovn,.ovcard-rd .ovs{color:var(--rd)}
+.ovcard-am .ovlbl,.ovcard-am .ovn,.ovcard-am .ovs{color:var(--am)}
+.ovcard-bl .ovlbl,.ovcard-bl .ovn,.ovcard-bl .ovs{color:var(--bl)}
+.ovcard-gy .ovlbl,.ovcard-gy .ovn,.ovcard-gy .ovs{color:var(--gy)}
+
+/* GRID / CARD */
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:13px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:14px}
+.card{background:var(--card);border-radius:13px;border:1px solid var(--brd);padding:17px}
+.ctit{font-size:12.5px;font-weight:600;margin-bottom:13px}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{text-align:left;padding:7px 10px;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--brd);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--brd)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#F9FAFF}
+
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.bg{background:var(--grl);color:var(--gr)}.bam{background:var(--aml);color:var(--am)}
+.brd{background:var(--rdl);color:var(--rd)}.bbl{background:var(--bll);color:var(--bl)}
+.bgy{background:var(--gyl);color:var(--gy)}.bpu{background:var(--pul);color:var(--pu)}
+
+/* STAT BARS */
+.sbrow{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.sblbl{font-size:11px;color:var(--t2);min-width:135px}
+.sbtrk{flex:1;height:5px;background:var(--brd);border-radius:3px;overflow:hidden}
+.sbfil{height:100%;border-radius:3px;transition:width .5s}
+.sbcnt{font-size:12px;font-weight:700;min-width:32px;text-align:right}
+.sbpct{font-size:11px;color:var(--t3);min-width:32px;text-align:right}
+
+/* FILTERS */
+.fbar{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap;align-items:center}
+.fbar select,.fbar input{padding:6px 9px;border:1px solid var(--brd);border-radius:8px;font-size:12px;color:var(--t1);background:var(--card);outline:none;font-family:inherit}
+.mla{margin-left:auto}
+.btn{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:var(--card);color:var(--t1);font-family:inherit}
+.btn:hover{background:var(--surf)}
+.btnp{background:var(--bl);color:#fff;border-color:var(--bl)}.btnp:hover{background:#1D4ED8}
+.btnd{background:var(--rd);color:#fff;border-color:var(--rd)}
+.btns{padding:4px 10px;font-size:11px}
+
+/* UPLOAD */
+.upzone{border:2px dashed var(--brd);border-radius:13px;padding:38px;text-align:center;cursor:pointer;background:var(--card);margin-bottom:14px;transition:all .2s}
+.upzone:hover,.upzone.drag{border-color:var(--bl);background:var(--bll)}
+input[type=file]{display:none}
+.upbar{height:4px;background:var(--brd);border-radius:2px;margin-top:10px;display:none;overflow:hidden}
+.upfil{height:100%;background:var(--bl);width:0;transition:width .4s;border-radius:2px}
+
+/* EVOL TABLE */
+.etbl{width:100%;border-collapse:collapse;font-size:12px}
+.etbl th{padding:7px 11px;text-align:center;background:var(--navy);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.etbl th:first-child{text-align:left;min-width:170px}
+.etbl td{padding:7px 11px;border-bottom:1px solid var(--brd);text-align:center}
+.etbl td:first-child{text-align:left;font-weight:600;font-size:11.5px}
+.etbl tr:hover td{background:#FAFBFF}
+.esec td{background:#0D1F3C!important;color:#93C5FD;font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:5px 11px}
+.ecur{background:var(--grl)!important;font-weight:700;color:var(--gr)!important}
+
+/* ADMIN */
+.aurow{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--brd)}
+.aurow:last-child{border-bottom:none}
+.aav{width:35px;height:35px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.aav-a{background:var(--pul);color:var(--pu)}.aav-v{background:var(--bll);color:var(--bl)}
+.aui{flex:1;min-width:0}
+.aun{font-weight:600;font-size:13px}
+.aum{font-size:11px;color:var(--t3);margin-top:2px}
+.tknchip{display:inline-flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:10px;background:var(--surf);padding:3px 8px;border-radius:6px;color:var(--t2);cursor:pointer;margin-top:4px}
+.tknchip:hover{background:var(--brd)}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center}
+.mbg.on{display:flex}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:410px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.mtit{font-size:15px;font-weight:700;margin-bottom:18px}
+.mf{margin-bottom:13px}
+.mf label{display:block;font-size:11.5px;font-weight:600;color:var(--t2);margin-bottom:4px}
+.mf input,.mf select{width:100%;padding:9px 11px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.mf input:focus{border-color:var(--bl)}
+.mact{display:flex;gap:7px;justify-content:flex-end;margin-top:18px}
+
+/* PAGI */
+.pag{display:flex;align-items:center;gap:8px;padding:11px 13px;font-size:12px;color:var(--t3)}
+
+/* WO LINK */
+.wl{color:var(--bl);font-family:'DM Mono',monospace;font-size:10.5px;text-decoration:none}
+.wl:hover{text-decoration:underline}
+
+/* CHART */
+.chbox{position:relative;height:195px}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--navy);color:#fff;padding:10px 15px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:9999;transform:translateY(70px);opacity:0;transition:all .25s;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--gr)}.toast.err{background:var(--rd)}
+
+/* SECTION TITLE */
+.stit{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.stit::after{content:'';flex:1;height:1px;background:var(--brd)}
+
+@media(max-width:768px){.kgrid,.ovgrid{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}.page{padding:12px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="lbox">
+    <div class="llogo">
+      <div class="llogo-ico">🏭</div>
+      <div class="llogo-t">Pilotage Logistique</div>
+      <div class="llogo-s">France — Accès sécurisé</div>
+    </div>
+    <div class="ltabs">
+      <div class="ltab on" id="tab-pwd" onclick="switchTab('pwd')">🔑 Connexion</div>
+      <div class="ltab" id="tab-tok" onclick="switchTab('tok')">🔗 Lien direct</div>
+    </div>
+    <div id="pane-pwd">
+      <div class="lf"><label>Identifiant</label><input type="text" id="inp-user" placeholder="identifiant" autocomplete="username"></div>
+      <div class="lf"><label>Mot de passe</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="lbtn" onclick="doLogin()">Se connecter →</button>
+    </div>
+    <div id="pane-tok" style="display:none">
+      <div class="lf"><label>Token d'accès</label><input type="text" id="inp-tok" placeholder="token transmis par votre responsable" style="font-family:'DM Mono',monospace;font-size:12px"></div>
+      <button class="lbtn" onclick="doTokenLogin()">Accéder →</button>
+      <p style="font-size:11.5px;color:var(--t3);margin-top:10px;line-height:1.6">Accès lecture seule via un lien direct. Aucun mot de passe requis.</p>
+    </div>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+
+<!-- MODAL CRÉER UTILISATEUR -->
+<div class="mbg" id="modal-user">
+  <div class="mbox">
+    <div class="mtit">Créer un accès</div>
+    <div class="mf"><label>Identifiant</label><input type="text" id="new-u" placeholder="ex: jdupont"></div>
+    <div class="mf"><label>Mot de passe</label><input type="password" id="new-p" placeholder="minimum 6 caractères"></div>
+    <div class="mf"><label>Rôle</label><select id="new-r"><option value="viewer">👁 Viewer — lecture seule</option><option value="admin">⚙️ Admin — accès complet</option></select></div>
+    <div class="mf"><label>Note (facultatif)</label><input type="text" id="new-n" placeholder="ex: Équipe UK, Commercial Bordeaux..."></div>
+    <div class="mact">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btnp" onclick="createUser()">Créer l'accès ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav id="appnav">
+  <div class="nlogo">Pilotage <span>Logistique</span></div>
+  <div class="ntabs">
+    <button class="ntab on" onclick="goto('dashboard',this)">📊 Tableau de bord</button>
+    <button class="ntab" onclick="goto('evolution',this)">📈 Évolution KPI</button>
+    <button class="ntab" onclick="goto('wo',this)">📋 Suivi WO</button>
+    <button class="ntab" onclick="goto('prep',this)">🔧 Préparation</button>
+    <button class="ntab adm-only" onclick="goto('upload',this)" style="display:none">⬆️ Import</button>
+    <button class="ntab adm-only" onclick="goto('admin',this)" style="display:none">⚙️ Admin</button>
+  </div>
+  <div class="nright">
+    <span class="nbw" id="nav-week">W— · —</span>
+    <div class="upill"><span id="nav-user">—</span><span class="rbadge" id="nav-role">—</span></div>
+    <button class="nout" onclick="doLogout()">Déconnexion</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dashboard">
+  <div class="kgrid">
+    <div class="kcard kg"><div class="kacc"></div><div class="klbl">Taux de service</div><div class="kval" id="k-ts">—</div><div class="ksub" id="k-ts-s">—</div></div>
+    <div class="kcard kbl"><div class="kacc"></div><div class="klbl">Service dans les délais</div><div class="kval" id="k-tss">—</div><div class="ksub" id="k-tss-s">vs date promise</div></div>
+    <div class="kcard krd"><div class="kacc"></div><div class="klbl">Stock Issue ouverts</div><div class="kval" id="k-si">—</div><div class="ksub" id="k-si-s">—</div></div>
+    <div class="kcard ktl"><div class="kacc"></div><div class="klbl">WO ouverts</div><div class="kval" id="k-open">—</div><div class="ksub">Non encore livrées</div></div>
+  </div>
+  <div class="kgrid">
+    <div class="kcard kam"><div class="kacc"></div><div class="klbl">Délai moyen traitement</div><div class="kval" id="k-jt">—</div><div class="ksub" id="k-jt-s">Jours ouvrés</div></div>
+    <div class="kcard kpu"><div class="kacc"></div><div class="klbl">En préparation</div><div class="kval" id="k-prep">—</div><div class="ksub">À traiter cette semaine</div></div>
+    <div class="kcard krd"><div class="kacc"></div><div class="klbl">Urgences 4-7 jours</div><div class="kval" id="k-urg4">—</div><div class="ksub">Priorité maximale</div></div>
+    <div class="kcard kbl"><div class="kacc"></div><div class="klbl">Valeur portefeuille</div><div class="kval" id="k-val">—</div><div class="ksub">Total WO analysés</div></div>
+  </div>
+  <div class="stit">Overdue interval</div>
+  <div class="ovgrid">
+    <div class="ovcard ovcard-rd"><div class="ovlbl">4 – 7 jours</div><div class="ovn" id="ov4">—</div><div class="ovs" id="ov4s">—</div></div>
+    <div class="ovcard ovcard-am"><div class="ovlbl">8 – 14 jours</div><div class="ovn" id="ov8">—</div><div class="ovs" id="ov8s">—</div></div>
+    <div class="ovcard ovcard-bl"><div class="ovlbl">15 – 30 jours</div><div class="ovn" id="ov15">—</div><div class="ovs" id="ov15s">—</div></div>
+    <div class="ovcard ovcard-gy"><div class="ovlbl">+ 30 jours</div><div class="ovn" id="ov30">—</div><div class="ovs" id="ov30s">—</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ctit">Performance par agence</div><div class="tw"><table id="t-ag"><thead><tr><th>Agence</th><th>WO</th><th>SI</th><th>Délai moy.</th><th>TS %</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><div class="ctit">Répartition des statuts</div><div id="stat-bars"></div><div class="chbox" style="height:165px;margin-top:14px"><canvas id="ch-stat"></canvas></div></div>
+  </div>
+  <div class="stit" style="color:var(--rd)">Stock Issue — triées par urgence</div>
+  <div class="card"><div class="tw"><table id="t-si"><thead><tr><th>Urgence</th><th>Agence</th><th>Machine</th><th>SLA</th><th>Client</th><th>WO Number</th><th>Délai ouvert</th><th>Valeur €</th></tr></thead><tbody></tbody></table></div></div>
+</div>
+
+<!-- ÉVOLUTION KPI -->
+<div class="page" id="page-evolution">
+  <div class="g3"><div class="card"><div class="ctit">Taux de service</div><div class="chbox"><canvas id="ch-ts"></canvas></div></div><div class="card"><div class="ctit">Délai moyen (jo)</div><div class="chbox"><canvas id="ch-jt"></canvas></div></div><div class="card"><div class="ctit">Volumes par statut</div><div class="chbox"><canvas id="ch-wo"></canvas></div></div></div>
+  <div class="card" style="margin-bottom:13px"><div class="ctit">KPI semaine par semaine</div><div class="tw"><table class="etbl"><thead><tr id="eh"></tr></thead><tbody id="eb"></tbody></table></div></div>
+  <div class="card"><div class="ctit">Taux de service par agence (%)</div><div class="tw"><table class="etbl"><thead><tr id="ah"></tr></thead><tbody id="ab"></tbody></table></div></div>
+</div>
+
+<!-- SUIVI WO -->
+<div class="page" id="page-wo">
+  <div class="fbar">
+    <select id="f-sem" onchange="renderWO()"><option value="">Toutes semaines</option></select>
+    <select id="f-br" onchange="renderWO()"><option value="">Toutes agences</option></select>
+    <select id="f-mac" onchange="renderWO()"><option value="">Toutes machines</option></select>
+    <select id="f-stat" onchange="renderWO()"><option value="">Tous statuts</option><option value="Stock Issue">Stock Issue</option><option value="in preparation W21">En préparation</option><option value="delivered, WO unscheduled">Livré</option><option value="customer machines no need">Machine client</option></select>
+    <select id="f-ov" onchange="renderWO()"><option value="">Toutes urgences</option><option value="4-7 days">4-7 j</option><option value="8-14 days">8-14 j</option><option value="15-30 days">15-30 j</option><option value="+30 days">+30 j</option></select>
+    <input type="text" id="f-q" placeholder="Rechercher…" oninput="renderWO()" style="min-width:150px">
+    <button class="btn mla" onclick="resetF()">Réinitialiser</button>
+    <span id="wo-cnt" style="font-size:11px;color:var(--t3)"></span>
+  </div>
+  <div class="card" style="padding:0"><div class="tw"><table id="t-wo"><thead><tr><th>WO</th><th>Sem.</th><th>Agence</th><th>Machine</th><th>SLA</th><th>Client</th><th>Statut</th><th>Urgence</th><th>Jo ouverts</th><th>Jo traitement</th><th>Retard</th><th>Valeur €</th></tr></thead><tbody id="wo-body"></tbody></table></div><div class="pag" id="wo-pag"></div></div>
+</div>
+
+<!-- PRÉPARATION -->
+<div class="page" id="page-prep">
+  <div class="fbar">
+    <select id="fp-sem" onchange="renderPrep()"><option value="">Toutes semaines</option></select>
+    <select id="fp-br" onchange="renderPrep()"><option value="">Toutes agences</option></select>
+    <span id="prep-cnt" style="font-size:11px;color:var(--t3)"></span>
+  </div>
+  <div class="card" style="margin-bottom:13px"><div class="ctit">Besoins machines</div><div class="tw"><table id="t-mac"><thead><tr><th>Machine</th><th>Total WO</th><th>Stock Issue</th><th>En prépa</th><th>SLA type</th><th>Agences</th></tr></thead><tbody></tbody></table></div></div>
+  <div class="stit" style="color:var(--am)">Affaires à préparer — triées par urgence</div>
+  <div class="card" style="padding:0"><div class="tw"><table id="t-prep"><thead><tr><th>Urgence</th><th>Agence</th><th>Machine</th><th>SLA</th><th>Client</th><th>WO Number</th><th>Délai ouvert</th><th>vs SLA</th><th>Valeur €</th></tr></thead><tbody id="prep-body"></tbody></table></div></div>
+</div>
+
+<!-- IMPORT -->
+<div class="page" id="page-upload">
+  <div style="max-width:640px;margin:0 auto">
+    <div class="upzone" id="drop-zone" onclick="document.getElementById('finput').click()" ondragover="ev.preventDefault()" ondrop="handleDrop(event)">
+      <div style="font-size:34px;margin-bottom:9px">📂</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:5px">Importer un export BI</div>
+      <div style="font-size:12px;color:var(--t3)">Glissez votre .xlsx ou cliquez</div>
+      <div style="margin-top:13px"><input type="text" id="sem-inp" placeholder="Semaine (ex: W22)" onclick="event.stopPropagation()" style="padding:8px 13px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;text-align:center;width:160px"></div>
+      <button class="btn btnp" onclick="event.stopPropagation();document.getElementById('finput').click()" style="margin-top:11px">Choisir un fichier</button>
+      <input type="file" id="finput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+      <div class="upbar" id="upbar"><div class="upfil" id="upfil"></div></div>
+    </div>
+    <div class="card"><div class="ctit">Historique des imports</div><div id="imp-hist"><div style="text-align:center;padding:28px 0;color:var(--t3)">📭 Aucun import</div></div></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div style="max-width:680px;margin:0 auto">
+    <div class="card" style="margin-bottom:13px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px">
+        <div class="ctit" style="margin:0">Gestion des accès</div>
+        <button class="btn btnp btns" onclick="openModal()">+ Créer un accès</button>
+      </div>
+      <div id="users-list"></div>
+    </div>
+    <div class="card">
+      <div class="ctit">Liens de partage (accès direct sans mot de passe)</div>
+      <div id="share-links"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  AUTH — localStorage uniquement, aucune API externe
+// ════════════════════════════════════════════════════════════════
+var SESSION = null;
+
+function hashPwd(u, p) {
+  var str = u + '::' + p + '::logi26';
+  var h = 5381;
+  for (var i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) + str.charCodeAt(i);
+    h = h | 0;
+  }
+  return Math.abs(h).toString(36) + '_' + str.length;
+}
+
+function genToken() {
+  var c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  var t = '';
+  for (var i = 0; i < 28; i++) t += c[Math.floor(Math.random() * c.length)];
+  return t;
+}
+
+function dbGet(key) {
+  try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+  catch(e) { return null; }
+}
+
+function dbSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); }
+  catch(e) { showToast('Stockage plein', 'err'); }
+}
+
+function initUsers() {
+  var users = dbGet('logi_users');
+  if (!users || Object.keys(users).length === 0) {
+    users = {
+      admin: {
+        hash: hashPwd('admin', 'logi2026!'),
+        role: 'admin',
+        token: genToken(),
+        note: 'Administrateur principal',
+        active: true,
+        created: new Date().toISOString().slice(0,10)
+      }
+    };
+    dbSet('logi_users', users);
+  }
+}
+
+function doLogin() {
+  var u = document.getElementById('inp-user').value.trim();
+  var p = document.getElementById('inp-pass').value;
+  var err = document.getElementById('lerr');
+  err.textContent = '';
+  if (!u || !p) { err.textContent = 'Remplissez tous les champs.'; return; }
+  var users = dbGet('logi_users');
+  if (!users) { err.textContent = 'Erreur interne. Rechargez la page.'; return; }
+  if (!users[u]) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+  if (!users[u].active) { err.textContent = 'Compte suspendu.'; return; }
+  if (users[u].hash !== hashPwd(u, p)) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+  SESSION = { username: u, role: users[u].role, token: users[u].token };
+  startApp();
+}
+
+function doTokenLogin() {
+  var t = document.getElementById('inp-tok').value.trim();
+  var err = document.getElementById('lerr');
+  err.textContent = '';
+  if (!t) { err.textContent = 'Saisissez le token.'; return; }
+  var users = dbGet('logi_users');
+  if (!users) { err.textContent = 'Erreur interne.'; return; }
+  var found = null, foundName = null;
+  Object.keys(users).forEach(function(name) {
+    if (users[name].token === t && users[name].active) { found = users[name]; foundName = name; }
+  });
+  if (!found) { err.textContent = 'Token invalide ou expiré.'; return; }
+  SESSION = { username: foundName, role: found.role, token: t };
+  startApp();
+}
+
+function checkURLToken() {
+  var t = new URLSearchParams(window.location.search).get('token');
+  if (!t) return false;
+  var users = dbGet('logi_users');
+  if (!users) return false;
+  var found = null, foundName = null;
+  Object.keys(users).forEach(function(name) {
+    if (users[name].token === t && users[name].active) { found = users[name]; foundName = name; }
+  });
+  if (!found) return false;
+  SESSION = { username: foundName, role: found.role, token: t };
+  return true;
+}
+
+function doLogout() {
+  SESSION = null;
+  document.getElementById('appnav').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('inp-pass').value = '';
+  document.getElementById('lerr').textContent = '';
+}
+
+function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('appnav').style.display = 'flex';
+  document.querySelectorAll('.adm-only').forEach(function(el) {
+    el.style.display = SESSION.role === 'admin' ? 'flex' : 'none';
+  });
+  document.getElementById('nav-user').textContent = SESSION.username;
+  var rb = document.getElementById('nav-role');
+  rb.textContent = SESSION.role === 'admin' ? 'Admin' : 'Viewer';
+  rb.className = 'rbadge' + (SESSION.role === 'admin' ? ' adm' : '');
+  loadDB();
+  renderDashboard();
+  if (SESSION.role === 'admin') updateImportHistory();
+}
+
+function switchTab(t) {
+  document.getElementById('pane-pwd').style.display = t === 'pwd' ? 'block' : 'none';
+  document.getElementById('pane-tok').style.display = t === 'tok' ? 'block' : 'none';
+  document.getElementById('tab-pwd').className = 'ltab' + (t === 'pwd' ? ' on' : '');
+  document.getElementById('tab-tok').className = 'ltab' + (t === 'tok' ? ' on' : '');
+  document.getElementById('lerr').textContent = '';
+}
+
+// ─── Gestion utilisateurs ─────────────────────────────────────
+function openModal() { document.getElementById('modal-user').className = 'mbg on'; }
+function closeModal() {
+  document.getElementById('modal-user').className = 'mbg';
+  ['new-u','new-p','new-n'].forEach(function(id){ document.getElementById(id).value=''; });
+}
+
+function createUser() {
+  var u = document.getElementById('new-u').value.trim();
+  var p = document.getElementById('new-p').value;
+  var role = document.getElementById('new-r').value;
+  var note = document.getElementById('new-n').value.trim();
+  if (!u || !p) { showToast('Remplissez identifiant et mot de passe', 'err'); return; }
+  if (p.length < 6) { showToast('Mot de passe trop court (6 car. min)', 'err'); return; }
+  var users = dbGet('logi_users') || {};
+  if (users[u]) { showToast('Cet identifiant existe déjà', 'err'); return; }
+  users[u] = { hash: hashPwd(u,p), role: role, token: genToken(), note: note, active: true, created: new Date().toISOString().slice(0,10) };
+  dbSet('logi_users', users);
+  closeModal();
+  showToast('Accès créé : ' + u, 'ok');
+  renderAdmin();
+}
+
+function toggleUser(name, active) {
+  var users = dbGet('logi_users') || {};
+  if (users[name]) { users[name].active = active; dbSet('logi_users', users); }
+  showToast(active ? name+' réactivé' : name+' suspendu', '');
+  renderAdmin();
+}
+
+function deleteUser(name) {
+  if (!confirm('Supprimer "' + name + '" ?')) return;
+  var users = dbGet('logi_users') || {};
+  delete users[name]; dbSet('logi_users', users);
+  showToast(name + ' supprimé', '');
+  renderAdmin();
+}
+
+function regenToken(name) {
+  var users = dbGet('logi_users') || {};
+  if (users[name]) { users[name].token = genToken(); dbSet('logi_users', users); }
+  showToast('Token régénéré', 'ok');
+  renderAdmin();
+}
+
+function renderAdmin() {
+  var users = dbGet('logi_users') || {};
+  var base = window.location.href.split('?')[0];
+  var list = document.getElementById('users-list');
+  var sl = document.getElementById('share-links');
+  var lhtml = '', shtml = '';
+  Object.keys(users).forEach(function(name) {
+    var u = users[name];
+    lhtml += '<div class="aurow"><div class="aav ' + (u.role==='admin'?'aav-a':'aav-v') + '">' + name[0].toUpperCase() + '</div><div class="aui"><div class="aun">' + name + (u.active?'':' <span style="color:var(--rd);font-size:10.5px">(suspendu)</span>') + '</div><div class="aum">' + (u.role==='admin'?'⚙️ Admin':'👁 Viewer') + ' · ' + (u.created||'—') + (u.note?' · '+u.note:'') + '</div><div class="tknchip" onclick="copyTxt(\'' + base + '?token=' + u.token + '\');showToast(\'Lien copié\',\'ok\')" title="Cliquer pour copier">🔗 ' + u.token.slice(0,14) + '…</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + (name!=='admin'?'<button class="btn btns" onclick="regenToken(\''+name+'\')">🔄</button><button class="btn btns" onclick="toggleUser(\''+name+'\','+(u.active?'false':'true')+')">'+(u.active?'Suspendre':'Réactiver')+'</button><button class="btn btnd btns" onclick="deleteUser(\''+name+'\')">Supprimer</button>':'<span style="font-size:10.5px;color:var(--t3)">Compte principal</span>') + '</div></div>';
+    if (u.active) {
+      shtml += '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--brd)"><span style="font-weight:600;font-size:12.5px;min-width:85px">' + name + '</span><span class="bdg ' + (u.role==='admin'?'bpu':'bbl') + '">' + u.role + '</span><code style="font-size:10px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + base + '?token=' + u.token + '</code><button class="btn btns" onclick="copyTxt(\'' + base + '?token=' + u.token + '\');showToast(\'Lien copié\',\'ok\')">Copier</button></div>';
+    }
+  });
+  list.innerHTML = lhtml;
+  sl.innerHTML = shtml || '<div style="color:var(--t3);font-size:13px;padding:12px 0">Aucun utilisateur actif.</div>';
+}
+
+function copyTxt(txt) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).catch(function() { fallbackCopy(txt); });
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(txt) {
+  var el = document.createElement('textarea'); el.value = txt;
+  document.body.appendChild(el); el.select(); document.execCommand('copy'); el.remove();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DONNÉES WO
+// ════════════════════════════════════════════════════════════════
+var DB = {};
+var CHARTS = {};
+var WO_PAGE = 1;
+var WO_PER_PAGE = 25;
+
+var DONE = 'delivered, WO unscheduled';
+var PREP = 'in preparation W21';
+var ISSUE = 'Stock Issue';
+
+var SLA = {M100:10,M100B:10,M101:10,M102:10,M102B:10,M104:10,M190:10,M190B:10,M195B:10,M212:10,M280:10,M315:10,M316:10,M730:10,M765:10,M950:10,ESK175:10,ESK300:10,SK75:10,M105:30,M115:30,M170:30,M195:30,M300:30,M440:30,SK150:30,SK300:30,SK400:30,M240:60,M245:60,M275:60,M312:60,M320:60,ESK000:60,ESK400:60,SK600:60};
+function getSLA(m) {
+  var b = (m||'').toUpperCase().match(/^([A-Z]+\d+)/);
+  return b ? (SLA[b[1]] || 14) : 14;
+}
+
+// Données W21 embarquées
+var W21 = [{"wo":"WO-000989463","link":"https://operations-qs-prod.crm11.dynamics.com","branch":"Angers","machine":"SK400","client":"SONOCO METAL PACKAGING FRANCE SAS","statut":"Stock Issue","overdue":"4-7 days","valeur":14183.39,"sla_jo":30,"jt":5,"retard":-2,"is_open":1,"semaine":"W21"},{"wo":"WO-000989741","link":"","branch":"Marseille","machine":"M320","client":"NAVAL GROUP TOULON - CA 15","statut":"in preparation W21","overdue":"4-7 days","valeur":32663.54,"sla_jo":10,"jt":5,"retard":-2,"is_open":1,"semaine":"W21"},{"wo":"WO-000992257","link":"","branch":"Paris-Nord","machine":"M190","client":"FENWICK LINDE","statut":"in preparation W21","overdue":"4-7 days","valeur":9539.92,"sla_jo":10,"jt":4,"retard":-2,"is_open":1,"semaine":"W21"},{"wo":"WO-000973533","branch":"Lille","machine":"M190","client":"Valenciano","statut":"in preparation W21","overdue":"4-7 days","valeur":2351.96,"sla_jo":10,"jt":7,"retard":0,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000973525","branch":"Lille","machine":"M765","client":"Valenciano","statut":"in preparation W21","overdue":"4-7 days","valeur":1919.97,"sla_jo":10,"jt":7,"retard":0,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000973338","branch":"Lille","machine":"M713","client":"REGNIER","statut":"Stock Issue","overdue":"4-7 days","valeur":4503.85,"sla_jo":10,"jt":7,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000971308","branch":"Rouen","machine":"M300","client":"TECHNICENTRE DES QUATRES MARES N45","statut":"Stock Issue","overdue":"8-14 days","valeur":6727.76,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000971227","branch":"Caen","machine":"M190","client":"CIP","statut":"in preparation W21","overdue":"8-14 days","valeur":0,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000971383","branch":"Paris-Nord","machine":"M190","client":"BABYNOV","statut":"in preparation W21","overdue":"8-14 days","valeur":4314.44,"sla_jo":10,"jt":9,"retard":-4,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000970578","branch":"Toulouse","machine":"M195","client":"GOODRICH AEROSPACE EUROPE SAS","statut":"in preparation W21","overdue":"8-14 days","valeur":9568,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000970584","branch":"Toulouse","machine":"M195","client":"GOODRICH AEROSPACE 2","statut":"in preparation W21","overdue":"8-14 days","valeur":9568,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000977561","branch":"Lille","machine":"M102","client":"Eurotunnel BAT F35","statut":"in preparation W21","overdue":"8-14 days","valeur":14531.92,"sla_jo":10,"jt":6,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000977550","branch":"Lille","machine":"M312","client":"Eurotunnel BAT F35","statut":"in preparation W21","overdue":"8-14 days","valeur":25667.98,"sla_jo":10,"jt":6,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000967927","branch":"Lille","machine":"SK400","client":"Eurotunnel BAT F35","statut":"Stock Issue","overdue":"8-14 days","valeur":30659.98,"sla_jo":30,"jt":10,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000971388","branch":"Lille","machine":"M100","client":"TECHNICENTRE DE HELLEMMES","statut":"in preparation W21","overdue":"8-14 days","valeur":8132.28,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000958430","branch":"Paris-Ouest","machine":"M190","client":"ELVI MAN TRUCK","statut":"delivered, WO unscheduled","overdue":"8-14 days","valeur":1812.02,"sla_jo":10,"jt":2,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000958451","branch":"Caen","machine":"M100","client":"LEROY GARAGE","statut":"delivered, WO unscheduled","overdue":"8-14 days","valeur":2363.99,"sla_jo":10,"jt":2,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000951587","branch":"Troyes","machine":"M101","client":"ALUMINIUM FRANCE EXTRUSION","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":4721.6,"sla_jo":30,"jt":10,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000972715","branch":"Lille","machine":"C200","client":"VKR FRANCE","statut":"customer machines no need","overdue":"15-30 days","valeur":15660.01,"sla_jo":14,"jt":7,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000951687","branch":"Lyon","machine":"M100","client":"SNCF RESEAU MACON","statut":"in preparation W21","overdue":"15-30 days","valeur":1412.32,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000951456","branch":"Paris-Ouest","machine":"ESK300","client":"CALISTE MARQUIS","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":11843.98,"sla_jo":10,"jt":2,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000951751","branch":"Quimper","machine":"M190","client":"BASE NAVALE BREST","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":3086.33,"sla_jo":10,"jt":15,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000947829","branch":"Angers","machine":"M730","client":"THE TRUCK COMPANY FRANCE","statut":"Stock Issue","overdue":"15-30 days","valeur":4139.96,"sla_jo":10,"jt":15,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000947804","branch":"Dijon","machine":"M190","client":"KEOLIS SUD LORRAINE","statut":"in preparation W21","overdue":"15-30 days","valeur":4407.94,"sla_jo":10,"jt":15,"retard":-3,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000946867","branch":"Dijon","machine":"M190","client":"SV-PRO Arbois","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":4269.8,"sla_jo":10,"jt":14,"retard":-3,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000949893","branch":"Paris-Ouest","machine":"M730","client":"SAFIR","statut":"Stock Issue","overdue":"15-30 days","valeur":6383.91,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000949995","branch":"Paris-Nord","machine":"M190","client":"COCHERY ILE DE FRANCE","statut":"in preparation W21","overdue":"15-30 days","valeur":4070.57,"sla_jo":10,"jt":14,"retard":-7,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000947767","branch":"Paris-Nord","machine":"M190","client":"DILT","statut":"in preparation W21","overdue":"15-30 days","valeur":5196,"sla_jo":10,"jt":15,"retard":-19,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000947797","branch":"Paris-Ouest","machine":"M190","client":"CSAG 78","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":6424.47,"sla_jo":10,"jt":6,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000937084","branch":"Quimper","machine":"M190","client":"RD BREST ATELIER TELEPHERIQUE","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":2509.52,"sla_jo":10,"jt":14,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000937568","branch":"Lille","machine":"C200","client":"Maintenance CNPE Gravelines","statut":"customer machines no need","overdue":"15-30 days","valeur":6839.93,"sla_jo":14,"jt":16,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000947714","branch":"Strasbourg","machine":"N/A","client":"MERCEDES BENZ TRUCKS MOLSHEIM","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":939.45,"sla_jo":14,"jt":10,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000931241","branch":"Lyon","machine":"SK300","client":"SCHAEFFLER FRANCE","statut":"Stock Issue","overdue":"15-30 days","valeur":15362.88,"sla_jo":10,"jt":17,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000937635","branch":"Montpellier","machine":"M713","client":"ETABLISSEMENT MATERIEL TRAIN JAUNE","statut":"in preparation W21","overdue":"15-30 days","valeur":4919.98,"sla_jo":10,"jt":16,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000931185","branch":"Vierzon","machine":"M100","client":"LITHOPRESS","statut":"in preparation W21","overdue":"15-30 days","valeur":3685.1,"sla_jo":10,"jt":17,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000968327","branch":"Toulouse","machine":"SK150","client":"ABEL","statut":"Stock Issue","overdue":"15-30 days","valeur":0,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000929701","branch":"Lille","machine":"M765","client":"AFPA LOMME","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":987.33,"sla_jo":10,"jt":6,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000931256","branch":"Quimper","machine":"M100","client":"ARIANEGROUP CROZON","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":3571.09,"sla_jo":10,"jt":14,"retard":0,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000958523","branch":"Toulouse","machine":"M104","client":"SAFRAN POWER UNITS SAS","statut":"in preparation W21","overdue":"15-30 days","valeur":20780.76,"sla_jo":10,"jt":11,"retard":null,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000971002","branch":"Toulouse","machine":"M104","client":"SAFRAN POWER UNITS SAS 2","statut":"in preparation W21","overdue":"15-30 days","valeur":20780.76,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000950831","branch":"Paris-Sud","machine":"C500","client":"BERNIER JUVISY","statut":"customer machines no need","overdue":"15-30 days","valeur":1898.39,"sla_jo":14,"jt":14,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000953297","branch":"Paris-Nord","machine":"ESK300","client":"TECHNICENTRE EST EUROPEEN ESK300","statut":"delivered, WO unscheduled","overdue":"15-30 days","valeur":16011,"sla_jo":10,"jt":30,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000929607","branch":"Paris-Nord","machine":"M190","client":"RATP RDS","statut":"in preparation W21","overdue":"15-30 days","valeur":4469.79,"sla_jo":10,"jt":18,"retard":-37,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000908581","branch":"Montpellier","machine":"M100","client":"CITROEN PEUGEOT GGH","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":2129.01,"sla_jo":10,"jt":13,"retard":-17,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000908567","branch":"Metz","machine":"SK150","client":"PONTICELLI EGZ","statut":"Stock Issue","overdue":"+30 days","valeur":12831.6,"sla_jo":10,"jt":23,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000907909","branch":"Paris-Sud","machine":"M100","client":"SNCF RESEAU INFRAPOLE MONTARGIS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":1101.21,"sla_jo":10,"jt":7,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000948323","branch":"Nice","machine":"M312","client":"ROBERTET SA","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":11951.94,"sla_jo":10,"jt":29,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000903969","branch":"Paris-Ouest","machine":"SK150","client":"RATP INFRASTRUCTURE Batiment B1","statut":"Stock Issue","overdue":"+30 days","valeur":8619.39,"sla_jo":10,"jt":25,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000967495","branch":"Bordeaux","machine":"SK75","client":"MICRO CONTROLE SPECTRA PHYSICS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":7904.98,"sla_jo":10,"jt":8,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000903838","branch":"Metz","machine":"M312","client":"BERGERAT MONNOYEUR","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":2110.62,"sla_jo":60,"jt":17,"retard":0,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000903190","branch":"Strasbourg","machine":"SK150","client":"Stockmeier Urethanes France","statut":"Stock Issue","overdue":"+30 days","valeur":6779.96,"sla_jo":10,"jt":25,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000888151","branch":"Paris-Nord","machine":"M102","client":"TECHNIS LE BOURGET","statut":"in preparation W21","overdue":"+30 days","valeur":1517.54,"sla_jo":10,"jt":27,"retard":-42,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000907345","branch":"Paris-Nord","machine":"M300","client":"ASTERYA","statut":"Stock Issue","overdue":"+30 days","valeur":5531.96,"sla_jo":30,"jt":24,"retard":-32,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000886905","branch":"Rouen","machine":"M765","client":"JOCQUIN ETS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":6083.22,"sla_jo":10,"jt":15,"retard":0,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000906928","branch":"Paris-Sud","machine":"M100","client":"CTM ATHIS MONS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":4427.94,"sla_jo":10,"jt":7,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000885501","branch":"Strasbourg","machine":"M100","client":"ATELIERS ET&S SAS 05","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":2047.5,"sla_jo":10,"jt":10,"retard":-1,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000854408","branch":"Annecy","machine":"M100","client":"TRANSDEV CHAMONIX","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":1702.82,"sla_jo":10,"jt":8,"retard":0,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000854664","branch":"Strasbourg","machine":"C200","client":"CLAAS Paray les Monial","statut":"customer machines no need","overdue":"+30 days","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000854640","branch":"Strasbourg","machine":"C200","client":"CLAAS charnay les macon","statut":"customer machines no need","overdue":"+30 days","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000989803","branch":"Paris-Ouest","machine":"M190","client":"SNCF VOYAGEURS MANTES LA JOLIE","statut":"in preparation W21","overdue":"+30 days","valeur":2472.47,"sla_jo":10,"jt":4,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000847500","branch":"Paris-Nord","machine":"M713","client":"EIV MOULIN NEUF 25810","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3406.1,"sla_jo":10,"jt":8,"retard":-29,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000847494","branch":"Paris-Nord","machine":"SK150","client":"EIV MOULIN NEUF 25810 SK","statut":"Stock Issue","overdue":"+30 days","valeur":11011.07,"sla_jo":10,"jt":37,"retard":-29,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000846718","branch":"Paris-Ouest","machine":"M190","client":"ABM","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":5711.96,"sla_jo":10,"jt":15,"retard":-43,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000846934","branch":"Toulouse","machine":"M190","client":"Fives Machining Forest line","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3804,"sla_jo":10,"jt":12,"retard":-46,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000845103","branch":"Quimper","machine":"M730","client":"RD QUIMPER BRETAGNE OCCIDENTALE","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":1349.57,"sla_jo":10,"jt":21,"retard":-58,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000842844","branch":"Caen","machine":"M104","client":"VERESCENCE ORNE","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3822,"sla_jo":10,"jt":10,"retard":-49,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000844046","branch":"Lille","machine":"SK75","client":"ENVIE NORD","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":7222.28,"sla_jo":10,"jt":2,"retard":-45,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000824623","branch":"Paris-Ouest","machine":"M316","client":"GOODRICH ACTUATION SYSTEMS","statut":"Stock Issue","overdue":"+30 days","valeur":28226.12,"sla_jo":10,"jt":42,"retard":-98,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000800648","branch":"Rouen","machine":"SK300","client":"Technicentre quatre mares N41","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":21185.06,"sla_jo":10,"jt":14,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000800657","branch":"Rouen","machine":"SK300","client":"technicentre quatre mares 42","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":21185.06,"sla_jo":10,"jt":22,"retard":-2,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000789522","branch":"Lille","machine":"M104","client":"VITRAGES ISOLANT DU NORD","statut":"in preparation W21","overdue":"+30 days","valeur":4589.98,"sla_jo":10,"jt":51,"retard":-38,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000789474","branch":"Annecy","machine":"SK150","client":"TECHNICENTRE - AURA CHAMBERY","statut":"Stock Issue","overdue":"+30 days","valeur":10411.9,"sla_jo":10,"jt":51,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000789477","branch":"Annecy","machine":"M104","client":"TECHNICENTRE - AURA CHAMBERY M104","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":2250.47,"sla_jo":10,"jt":14,"retard":-57,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000951568","branch":"Toulouse","machine":"M102","client":"GOODRICH AEROSPACE M102","statut":"issue item number","overdue":"+30 days","valeur":9880,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000951590","branch":"Toulouse","machine":"M102","client":"GOODRICH AEROSPACE M102 2","statut":"issue item number","overdue":"+30 days","valeur":9568,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000802567","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT COCLOIS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-18,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000758106","branch":"Marseille","machine":"C200","client":"Valves Marine Service","statut":"customer machines no need","overdue":"+30 days","valeur":5004.05,"sla_jo":14,"jt":58,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000802576","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT PERRIGNY","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-18,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000802572","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT SOUCY","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-24,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000752450","branch":"Paris-Nord","machine":"M312","client":"RATP RDS LES BORDS DE MARNE B","statut":"in preparation W21","overdue":"+30 days","valeur":9414.15,"sla_jo":10,"jt":60,"retard":-143,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000738784","branch":"Paris-Nord","machine":"M312","client":"RATP MRF UDM MF77 VMI PLEYEL","statut":"in preparation W21","overdue":"+30 days","valeur":8865.09,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000738710","branch":"Paris-Nord","machine":"M312","client":"RATP MRF FONTENAY APPAREILLAGE","statut":"in preparation W21","overdue":"+30 days","valeur":8651.89,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000738779","branch":"Paris-Nord","machine":"M312","client":"RATP MRF ITALIE AMT CHOISY","statut":"in preparation W21","overdue":"+30 days","valeur":8865.48,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000738777","branch":"Paris-Nord","machine":"M315","client":"RATP MRF UM MF67 DESNOUETTES","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":18149.56,"sla_jo":10,"jt":5,"retard":-69,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000757243","branch":"Montpellier","machine":"M104","client":"IMPRESSIONS DE L ENCLOS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3083.99,"sla_jo":10,"jt":9,"retard":-70,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000737193","branch":"Pau","machine":"M312","client":"SAFRAN HELICOPTER ENGINES SAS","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":18328.83,"sla_jo":10,"jt":1,"retard":-67,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000674480","branch":"Metz","machine":"M316","client":"SA LINDAL FRANCE","statut":"Stock Issue","overdue":"+30 days","valeur":10032.23,"sla_jo":10,"jt":78,"retard":-93,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000673996","branch":"Toulouse","machine":"M100","client":"EIV QUERCY CORREZE","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":1101.21,"sla_jo":10,"jt":3,"retard":-20,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000673998","branch":"Toulouse","machine":"M212","client":"EIV QUERCY CORREZE M212","statut":"in preparation W21","overdue":"+30 days","valeur":2976.87,"sla_jo":10,"jt":78,"retard":-88,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000909629","branch":"Bordeaux","machine":"ESK000","client":"GRAFFEUILLE ETS SAS","statut":"Stock Issue","overdue":"+30 days","valeur":43162.47,"sla_jo":60,"jt":22,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000657698","branch":"Vierzon","machine":"M713","client":"ESPACE AUTO WARSEMANN","statut":"in preparation W21","overdue":"+30 days","valeur":20029.88,"sla_jo":10,"jt":81,"retard":-83,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000797799","branch":"Rouen","machine":"M245","client":"TECHNICENTRE QUATRE MARES","statut":"Stock Issue","overdue":"+30 days","valeur":51038,"sla_jo":60,"jt":50,"retard":-113,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000590546","branch":"Dijon","machine":"M312","client":"FRAMATOME","statut":"Stock Issue","overdue":"+30 days","valeur":14076.01,"sla_jo":10,"jt":97,"retard":-179,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000854984","branch":"Paris-Sud","machine":"C500","client":"BERNIER ESSONNE","statut":"customer machines no need","overdue":"+30 days","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000854994","branch":"Paris-Sud","machine":"C500","client":"BERNIER ETAMPES","statut":"customer machines no need","overdue":"+30 days","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000854307","branch":"Paris-Sud","machine":"C100","client":"BERGERAT MONNOYEUR CRC","statut":"customer machines no need","overdue":"+30 days","valeur":1304.97,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000989743","branch":"Paris-Sud","machine":"C500","client":"JMD ETIQUETTES","statut":"customer machines no need","overdue":"+30 days","valeur":4654.07,"sla_jo":14,"jt":5,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000846943","branch":"Paris-Nord","machine":"M713","client":"LES STRATIFIES STRATIVER","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":5850,"sla_jo":10,"jt":13,"retard":-40,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000854641","branch":"Strasbourg","machine":"C200","client":"CLAAS charnay 2","statut":"customer machines no need","overdue":"+30 days","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000855144","branch":"Paris-Sud","machine":"C500","client":"BERNIER MONTARGIS","statut":"customer machines no need","overdue":"+30 days","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"semaine":"W21","link":""},{"wo":"WO-000907354","branch":"Paris-Nord","machine":"N/A","client":"ASTERYA","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":1880.52,"sla_jo":14,"jt":4,"retard":-32,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000737539","branch":"Paris-Nord","machine":"M713","client":"SP DEFENSE","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":9549.93,"sla_jo":10,"jt":1,"retard":-83,"is_open":0,"semaine":"W21","link":""},{"wo":"WO-000989743b","branch":"Paris-Ouest","machine":"M712","client":"SAFIR 2","statut":"delivered, WO unscheduled","overdue":"+30 days","valeur":3192,"sla_jo":10,"jt":12,"retard":-2,"is_open":0,"semaine":"W21","link":""}];
+
+function loadDB() {
+  try { DB = JSON.parse(localStorage.getItem('logi_db') || '{}'); }
+  catch(e) { DB = {}; }
+  if (!DB['W21'] || DB['W21'].length < 10) { DB['W21'] = W21; saveDB(); }
+}
+function saveDB() { try { localStorage.setItem('logi_db', JSON.stringify(DB)); } catch(e) { showToast('Stockage plein','err'); } }
+function allRows() { var r = []; Object.keys(DB).forEach(function(s){ r = r.concat(DB[s]); }); return r; }
+function sems() { return Object.keys(DB).sort(); }
+function lastSem() { var s = sems(); return s.length ? s[s.length-1] : null; }
+
+function kpi(rows) {
+  var n = rows.length; if (!n) return null;
+  var liv = rows.filter(function(r){return r.statut===DONE;}).length;
+  var si  = rows.filter(function(r){return r.statut===ISSUE;}).length;
+  var prp = rows.filter(function(r){return r.statut===PREP;}).length;
+  var opn = rows.filter(function(r){return r.is_open===1;}).length;
+  var ts  = liv/n*100;
+  var tsn = rows.filter(function(r){return r.statut===DONE&&r.retard!=null&&r.retard<=0;}).length;
+  var tss = tsn/n*100;
+  var jts = rows.map(function(r){return r.jt;}).filter(function(v){return v!=null;});
+  var mj = jts.length ? jts.reduce(function(a,b){return a+b;},0)/jts.length : 0;
+  var mej= jts.length ? jts.slice().sort(function(a,b){return a-b;})[Math.floor(jts.length/2)] : 0;
+  var mxj= jts.length ? Math.max.apply(null,jts) : 0;
+  var vt = rows.reduce(function(s,r){return s+(r.valeur||0);},0);
+  var vs = rows.filter(function(r){return r.statut===ISSUE;}).reduce(function(s,r){return s+(r.valeur||0);},0);
+  return {n:n,liv:liv,si:si,prp:prp,opn:opn,ts:ts,tss:tss,tsn:tsn,mj:mj,mej:mej,mxj:mxj,vt:vt,vs:vs,
+    u4:rows.filter(function(r){return r.overdue==='4-7 days';}).length,
+    u8:rows.filter(function(r){return r.overdue==='8-14 days';}).length,
+    u15:rows.filter(function(r){return r.overdue==='15-30 days';}).length,
+    u30:rows.filter(function(r){return r.overdue==='+30 days';}).length};
+}
+
+// ─── Helpers UI ───────────────────────────────────────────────
+function ovBdg(ov) {
+  var m={'4-7 days':['brd','4-7 j'],'8-14 days':['bam','8-14 j'],'15-30 days':['bbl','15-30 j'],'+30 days':['bgy','+30 j']};
+  var x=m[ov]||['bgy',ov]; return '<span class="bdg '+x[0]+'">'+x[1]+'</span>';
+}
+function slaSp(s) {
+  var bg=s<=10?'var(--grl)':s<=30?'var(--aml)':'var(--rdl)';
+  var fg=s<=10?'var(--gr)':s<=30?'var(--am)':'var(--rd)';
+  return '<span style="background:'+bg+';color:'+fg+';padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:700">'+s+' jo</span>';
+}
+function stBdg(s) {
+  var m={};
+  m[DONE]='<span class="bdg bg">Livré</span>';
+  m[PREP]='<span class="bdg bam">En prépa</span>';
+  m[ISSUE]='<span class="bdg brd">Stock Issue</span>';
+  m['customer machines no need']='<span class="bdg bgy">Machine client</span>';
+  m['issue item number']='<span class="bdg bpu">Issue item</span>';
+  return m[s]||'<span class="bdg bgy">'+s+'</span>';
+}
+function wlnk(r) {
+  return r.link?'<a href="'+r.link+'" target="_blank" class="wl">'+r.wo+'</a>'
+               :'<span style="font-family:DM Mono,monospace;font-size:10.5px;color:var(--bl)">'+r.wo+'</span>';
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────
+function renderDashboard() {
+  var ls = lastSem(); var rows = ls ? DB[ls] : []; var k = kpi(rows);
+  if (!k) { document.getElementById('nav-week').textContent='W— · Aucune donnée'; return; }
+  document.getElementById('nav-week').textContent = ls+' · '+k.n+' WO';
+  document.getElementById('k-ts').textContent   = k.ts.toFixed(1)+' %';
+  document.getElementById('k-ts-s').textContent = k.liv+' livrés / '+k.n+' WO';
+  document.getElementById('k-tss').textContent  = k.tss.toFixed(1)+' %';
+  document.getElementById('k-tss-s').textContent= k.tsn+' dans les délais';
+  document.getElementById('k-si').textContent   = k.si+' WO';
+  document.getElementById('k-si-s').textContent = 'Bloqué · '+(k.vs/1000).toFixed(0)+'k €';
+  document.getElementById('k-open').textContent = k.opn+' WO';
+  document.getElementById('k-jt').textContent   = k.mj.toFixed(0)+' jo';
+  document.getElementById('k-jt-s').textContent = 'Médiane '+k.mej.toFixed(0)+'jo · Max '+k.mxj+'jo';
+  document.getElementById('k-prep').textContent = k.prp+' WO';
+  document.getElementById('k-urg4').textContent = k.u4+' WO';
+  document.getElementById('k-val').textContent  = (k.vt/1000).toFixed(0)+'k €';
+  var ovs = [{id:'ov4',id2:'ov4s',n:k.u4},{id:'ov8',id2:'ov8s',n:k.u8},{id:'ov15',id2:'ov15s',n:k.u15},{id:'ov30',id2:'ov30s',n:k.u30}];
+  ovs.forEach(function(o){ document.getElementById(o.id).textContent=o.n; document.getElementById(o.id2).textContent=o.n>0?(o.n/k.n*100).toFixed(0)+' %':'—'; });
+
+  var brs = []; rows.forEach(function(r){ if(brs.indexOf(r.branch)<0)brs.push(r.branch); }); brs.sort();
+  document.querySelector('#t-ag tbody').innerHTML = brs.map(function(b){
+    var br=rows.filter(function(r){return r.branch===b;}); var nb=br.length;
+    var liv=br.filter(function(r){return r.statut===DONE;}).length;
+    var si=br.filter(function(r){return r.statut===ISSUE;}).length;
+    var jts=br.map(function(r){return r.jt;}).filter(function(v){return v!=null;});
+    var dm=jts.length?jts.reduce(function(a,b){return a+b;},0)/jts.length:null;
+    var tv=nb>0?liv/nb*100:0;
+    var tsc=tv>=60?'var(--gr)':tv>=35?'var(--am)':'var(--rd)';
+    var tsbg=tv>=60?'var(--grl)':tv>=35?'var(--aml)':'var(--rdl)';
+    return '<tr><td><strong>'+b+'</strong></td><td style="text-align:center;font-weight:700;color:var(--bl)">'+nb+'</td><td style="text-align:center">'+(si>0?'<span style="color:var(--rd);font-weight:700">'+si+'</span>':'—')+'</td><td style="text-align:center;color:'+(dm&&dm>20?'var(--am)':'var(--t2)')+'">'+(dm?dm.toFixed(0)+' jo':'—')+'</td><td><span style="background:'+tsbg+';color:'+tsc+';padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700">'+tv.toFixed(0)+' %</span></td></tr>';
+  }).join('');
+
+  var sdefs=[{k:DONE,l:'Livré / WO ouvert',c:'var(--gr)'},{k:PREP,l:'En préparation',c:'var(--am)'},{k:ISSUE,l:'Stock Issue',c:'var(--rd)'},{k:'customer machines no need',l:'Machine client',c:'var(--gy)'},{k:'issue item number',l:'Issue item',c:'var(--pu)'}];
+  document.getElementById('stat-bars').innerHTML = sdefs.map(function(s){
+    var cnt=rows.filter(function(r){return r.statut===s.k;}).length;
+    var pct=k.n>0?cnt/k.n*100:0;
+    return '<div class="sbrow"><div class="sblbl" style="font-size:11px">'+s.l+'</div><div class="sbtrk"><div class="sbfil" style="width:'+pct+'%;background:'+s.c+'"></div></div><div class="sbcnt">'+cnt+'</div><div class="sbpct">'+pct.toFixed(0)+'%</div></div>';
+  }).join('');
+
+  if(CHARTS.stat) CHARTS.stat.destroy();
+  CHARTS.stat = new Chart(document.getElementById('ch-stat').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:sdefs.map(function(s){return s.l;}),datasets:[{data:sdefs.map(function(s){return rows.filter(function(r){return r.statut===s.k;}).length;}),backgroundColor:['#16A34A','#D97706','#DC2626','#6B7280','#7C3AED'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
+  });
+
+  var siRows = rows.filter(function(r){return r.statut===ISSUE;}).sort(function(a,b){
+    var o={'4-7 days':0,'8-14 days':1,'15-30 days':2,'+30 days':3};
+    return (o[a.overdue]||9)-(o[b.overdue]||9);
+  });
+  document.querySelector('#t-si tbody').innerHTML = siRows.map(function(r){
+    var jc=r.jt>r.sla_jo?'<span style="color:var(--rd);font-weight:700">'+r.jt+' jo</span>':r.jt>r.sla_jo*.8?'<span style="color:var(--am);font-weight:600">'+r.jt+' jo</span>':(r.jt||'—')+' jo';
+    return '<tr><td>'+ovBdg(r.overdue)+'</td><td><strong>'+r.branch+'</strong></td><td><code style="background:var(--bll);color:var(--bl);padding:2px 5px;border-radius:4px;font-size:10.5px">'+r.machine+'</code></td><td>'+slaSp(r.sla_jo)+'</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">'+r.client+'</td><td>'+wlnk(r)+'</td><td>'+jc+'</td><td style="text-align:right;font-size:12px;color:var(--t2)">'+(r.valeur>0?r.valeur.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €':'—')+'</td></tr>';
+  }).join('');
+}
+
+// ─── ÉVOLUTION KPI ────────────────────────────────────────────
+function renderEvolution() {
+  var ss = sems(); if(!ss.length) return;
+  var kpis = ss.map(function(s){return Object.assign({sem:s},kpi(DB[s]));});
+  var ls = lastSem();
+  document.getElementById('eh').innerHTML = '<th>Indicateur</th>'+ss.map(function(s){return '<th style="'+(s===ls?'background:#16A34A':'background:var(--navy);color:#93C5FD')+'">'+s+'</th>';}).join('');
+  var rows=[
+    {sec:1,l:'▌ VOLUMES'},{l:'Total WO',fn:function(k){return k.n;}},{l:'WO livrés',fn:function(k){return k.liv;}},{l:'Stock Issue',fn:function(k){return k.si;}},{l:'En préparation',fn:function(k){return k.prp;}},
+    {sec:1,l:'▌ TAUX DE SERVICE'},{l:'TS base (%)',fn:function(k){return k.ts.toFixed(1)+' %';}},{l:'TS délais (%)',fn:function(k){return k.tss.toFixed(1)+' %';}},
+    {sec:1,l:'▌ DÉLAIS'},{l:'Délai moyen (jo)',fn:function(k){return k.mj.toFixed(1);}},{l:'Délai médian (jo)',fn:function(k){return k.mej.toFixed(1);}},
+    {sec:1,l:'▌ VALEUR'},{l:'Valeur portefeuille (k€)',fn:function(k){return Math.round(k.vt/1000);}},{l:'Valeur SI bloquée (k€)',fn:function(k){return Math.round(k.vs/1000);}},
+  ];
+  document.getElementById('eb').innerHTML = rows.map(function(row){
+    if(row.sec) return '<tr class="esec"><td colspan="'+(ss.length+1)+'">'+row.l+'</td></tr>';
+    return '<tr><td>'+row.l+'</td>'+kpis.map(function(k,i){return '<td class="'+(ss[i]===ls?'ecur':'')+'">'+row.fn(k)+'</td>';}).join('')+'</tr>';
+  }).join('');
+
+  var allBr=[]; allRows().forEach(function(r){if(allBr.indexOf(r.branch)<0)allBr.push(r.branch);}); allBr.sort();
+  document.getElementById('ah').innerHTML='<th>Agence</th>'+ss.map(function(s){return '<th style="'+(s===ls?'background:#16A34A':'background:var(--navy);color:#93C5FD')+'">'+s+'</th>';}).join('');
+  document.getElementById('ab').innerHTML=allBr.map(function(ag){
+    return '<tr><td>'+ag+'</td>'+ss.map(function(s,i){
+      var br=(DB[s]||[]).filter(function(r){return r.branch===ag;}); var nb=br.length, liv=br.filter(function(r){return r.statut===DONE;}).length;
+      if(!nb) return '<td class="'+(ss[i]===ls?'ecur':'')+'">—</td>';
+      var tv=liv/nb*100, c=tv>=60?'var(--gr)':tv>=35?'var(--am)':'var(--rd)';
+      return '<td class="'+(ss[i]===ls?'ecur':'')+'" style="color:'+c+';font-weight:700">'+tv.toFixed(1)+' %</td>';
+    }).join('')+'</tr>';
+  }).join('');
+
+  var labels=ss;
+  var tsv=kpis.map(function(k){return +k.ts.toFixed(1);});
+  var tssv=kpis.map(function(k){return +k.tss.toFixed(1);});
+  var jtv=kpis.map(function(k){return +k.mj.toFixed(1);});
+  if(CHARTS.ts)CHARTS.ts.destroy();
+  CHARTS.ts=new Chart(document.getElementById('ch-ts').getContext('2d'),{type:'line',data:{labels:labels,datasets:[{label:'TS base %',data:tsv,borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.3,pointRadius:5},{label:'TS délais %',data:tssv,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.05)',fill:true,tension:.3,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}},scales:{y:{min:0,max:100}}}});
+  if(CHARTS.jt)CHARTS.jt.destroy();
+  CHARTS.jt=new Chart(document.getElementById('ch-jt').getContext('2d'),{type:'line',data:{labels:labels,datasets:[{label:'Délai moy. (jo)',data:jtv,borderColor:'#D97706',backgroundColor:'rgba(217,119,6,.1)',fill:true,tension:.3,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}}}});
+  if(CHARTS.wo)CHARTS.wo.destroy();
+  CHARTS.wo=new Chart(document.getElementById('ch-wo').getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{label:'Livrés',data:kpis.map(function(k){return k.liv;}),backgroundColor:'rgba(22,163,74,.8)'},{label:'En prépa',data:kpis.map(function(k){return k.prp;}),backgroundColor:'rgba(217,119,6,.8)'},{label:'SI',data:kpis.map(function(k){return k.si;}),backgroundColor:'rgba(220,38,38,.8)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{stacked:true},y:{stacked:true}}}});
+}
+
+// ─── SUIVI WO ─────────────────────────────────────────────────
+function initWOF() {
+  var all=allRows();
+  var ss=[],brs=[],macs=[];
+  all.forEach(function(r){ if(ss.indexOf(r.semaine)<0)ss.push(r.semaine); if(brs.indexOf(r.branch)<0)brs.push(r.branch); if(macs.indexOf(r.machine)<0)macs.push(r.machine); });
+  ss.sort(); brs.sort(); macs.sort();
+  document.getElementById('f-sem').innerHTML='<option value="">Toutes semaines</option>'+ss.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  document.getElementById('f-br').innerHTML='<option value="">Toutes agences</option>'+brs.map(function(b){return '<option value="'+b+'">'+b+'</option>';}).join('');
+  document.getElementById('f-mac').innerHTML='<option value="">Toutes machines</option>'+macs.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('');
+  var ls=lastSem(); if(ls) document.getElementById('f-sem').value=ls;
+}
+function renderWO() {
+  var fS=document.getElementById('f-sem').value,fB=document.getElementById('f-br').value;
+  var fM=document.getElementById('f-mac').value,fSt=document.getElementById('f-stat').value;
+  var fO=document.getElementById('f-ov').value,fQ=document.getElementById('f-q').value.toLowerCase();
+  var filtered=allRows().filter(function(r){
+    return (!fS||r.semaine===fS)&&(!fB||r.branch===fB)&&(!fM||r.machine===fM)&&(!fSt||r.statut===fSt)&&(!fO||r.overdue===fO)&&(!fQ||(r.wo+r.client+r.branch+r.machine).toLowerCase().indexOf(fQ)>=0);
+  });
+  document.getElementById('wo-cnt').textContent=filtered.length+' WO';
+  var start=(WO_PAGE-1)*WO_PER_PAGE, page=filtered.slice(start,start+WO_PER_PAGE);
+  document.getElementById('wo-body').innerHTML=page.map(function(r){
+    var jtD=r.is_open?(r.jt!=null?'<span style="color:'+(r.jt>30?'var(--rd)':r.jt>14?'var(--am)':'var(--t2)')+';font-weight:600">'+r.jt+' jo</span>':'—'):'—';
+    var trD=!r.is_open?(r.jt!=null?'<span style="color:'+(r.jt>r.sla_jo?'var(--rd)':r.jt>r.sla_jo*.8?'var(--am)':'var(--gr)')+';font-weight:600">'+r.jt+' jo</span>':'—'):'—';
+    var retD=r.retard!=null?'<span style="color:'+(r.retard>0?'var(--rd)':r.retard<0?'var(--gr)':'var(--t2)')+'">'+r.retard+' jo</span>':'—';
+    return '<tr><td>'+wlnk(r)+'</td><td><span style="background:var(--bll);color:var(--bl);padding:2px 5px;border-radius:4px;font-size:9.5px;font-weight:700">'+(r.semaine||'—')+'</span></td><td><strong style="font-size:12px">'+r.branch+'</strong></td><td><code style="background:var(--surf);padding:2px 5px;border-radius:4px;font-size:10.5px">'+r.machine+'</code></td><td>'+slaSp(r.sla_jo)+'</td><td style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.client+'</td><td>'+stBdg(r.statut)+'</td><td>'+ovBdg(r.overdue)+'</td><td style="text-align:center">'+jtD+'</td><td style="text-align:center">'+trD+'</td><td style="text-align:center">'+retD+'</td><td style="text-align:right;font-size:12px;color:var(--t2)">'+(r.valeur>0?r.valeur.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €':'—')+'</td></tr>';
+  }).join('');
+  var pages=Math.ceil(filtered.length/WO_PER_PAGE);
+  var pag=document.getElementById('wo-pag');
+  pag.innerHTML='<span>'+(start+1)+'–'+Math.min(start+WO_PER_PAGE,filtered.length)+' sur '+filtered.length+'</span>';
+  if(WO_PAGE>1) pag.innerHTML+='<button class="btn" onclick="WO_PAGE--;renderWO()">‹</button>';
+  pag.innerHTML+='<span>Page '+WO_PAGE+'/'+(pages||1)+'</span>';
+  if(WO_PAGE<pages) pag.innerHTML+='<button class="btn" onclick="WO_PAGE++;renderWO()">›</button>';
+}
+function resetF(){['f-sem','f-br','f-mac','f-stat','f-ov'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('f-q').value='';var ls=lastSem();if(ls)document.getElementById('f-sem').value=ls;WO_PAGE=1;renderWO();}
+
+// ─── PRÉPARATION ─────────────────────────────────────────────
+function initPrepF() {
+  var all=allRows(),ss=[],brs=[];
+  all.forEach(function(r){if(ss.indexOf(r.semaine)<0)ss.push(r.semaine);if(brs.indexOf(r.branch)<0)brs.push(r.branch);});
+  ss.sort();brs.sort();
+  document.getElementById('fp-sem').innerHTML='<option value="">Toutes semaines</option>'+ss.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  document.getElementById('fp-br').innerHTML='<option value="">Toutes agences</option>'+brs.map(function(b){return '<option value="'+b+'">'+b+'</option>';}).join('');
+  var ls=lastSem();if(ls)document.getElementById('fp-sem').value=ls;
+}
+function renderPrep() {
+  var fS=document.getElementById('fp-sem').value,fB=document.getElementById('fp-br').value;
+  var rows=allRows().filter(function(r){return [ISSUE,PREP].indexOf(r.statut)>=0&&(!fS||r.semaine===fS)&&(!fB||r.branch===fB);});
+  var ov={'4-7 days':0,'8-14 days':1,'15-30 days':2,'+30 days':3};
+  rows.sort(function(a,b){return (ov[a.overdue]||9)-(ov[b.overdue]||9)||(b.jt||0)-(a.jt||0);});
+  document.getElementById('prep-cnt').textContent=rows.length+' WO à préparer';
+  var macs=[];rows.forEach(function(r){if(macs.indexOf(r.machine)<0)macs.push(r.machine);});macs.sort();
+  document.querySelector('#t-mac tbody').innerHTML=macs.map(function(m){
+    var mr=rows.filter(function(r){return r.machine===m;});
+    var ags=[];mr.forEach(function(r){if(ags.indexOf(r.branch)<0)ags.push(r.branch);});
+    return '<tr><td><code style="background:var(--bll);color:var(--bl);padding:2px 6px;border-radius:4px;font-size:10.5px;font-weight:700">'+m+'</code></td><td style="text-align:center;font-weight:700;color:var(--bl)">'+mr.length+'</td><td style="text-align:center">'+(mr.filter(function(r){return r.statut===ISSUE;}).length||'—')+'</td><td style="text-align:center">'+(mr.filter(function(r){return r.statut===PREP;}).length||'—')+'</td><td>'+slaSp(mr[0]?mr[0].sla_jo:14)+'</td><td style="font-size:12px;color:var(--t2)">'+ags.join(', ')+'</td></tr>';
+  }).join('');
+  document.getElementById('prep-body').innerHTML=rows.map(function(r){
+    var pct=r.jt&&r.sla_jo?r.jt/r.sla_jo*100:null;
+    var vt,vc;
+    if(!pct){vt='—';vc='var(--gy)';}
+    else if(pct<=80){vt='Excellent';vc='var(--gr)';}
+    else if(pct<=100){vt='Dans SLA';vc='var(--gr)';}
+    else if(pct<=130){vt='Proche';vc='var(--am)';}
+    else{vt='Hors SLA';vc='var(--rd)';}
+    return '<tr><td>'+ovBdg(r.overdue)+'</td><td><strong style="font-size:12px">'+r.branch+'</strong></td><td><code style="background:var(--bll);color:var(--bl);padding:2px 5px;border-radius:4px;font-size:10.5px">'+r.machine+'</code></td><td>'+slaSp(r.sla_jo)+'</td><td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.client+'</td><td>'+wlnk(r)+'</td><td style="text-align:center">'+(r.jt?'<span style="color:'+(r.jt>r.sla_jo?'var(--rd)':'var(--t2)')+';font-weight:600">'+r.jt+' jo</span>':'—')+'</td><td><span style="color:'+vc+';font-weight:600;font-size:12px">'+vt+'</span></td><td style="text-align:right;font-size:12px;color:var(--t2)">'+(r.valeur>0?r.valeur.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €':'—')+'</td></tr>';
+  }).join('');
+}
+
+// ─── IMPORT ───────────────────────────────────────────────────
+document.getElementById('drop-zone').addEventListener('dragover',function(e){e.preventDefault();document.getElementById('drop-zone').className='upzone drag';});
+document.getElementById('drop-zone').addEventListener('dragleave',function(){document.getElementById('drop-zone').className='upzone';});
+function handleDrop(e){e.preventDefault();document.getElementById('drop-zone').className='upzone';var f=e.dataTransfer.files[0];if(f)handleFile(f);}
+
+function handleFile(file) {
+  if(!file) return;
+  var sem=document.getElementById('sem-inp').value.trim().toUpperCase();
+  if(!sem||!sem.match(/^W\d+$/)){showToast('Saisissez la semaine (ex: W22) avant d\'importer','err');return;}
+  var prog=document.getElementById('upbar'),fill=document.getElementById('upfil');
+  prog.style.display='block';fill.style.width='20%';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    fill.style.width='60%';
+    try {
+      var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      var sn=wb.SheetNames[0];
+      wb.SheetNames.forEach(function(n){if(n.toLowerCase().indexOf('export')>=0||n.toLowerCase().indexOf('placement')>=0)sn=n;});
+      var json=XLSX.utils.sheet_to_json(wb.Sheets[sn],{raw:false,dateNF:'YYYY-MM-DD'});
+      fill.style.width='80%';
+      var today=new Date();
+      function jo(d1,d2){if(!d1||!d2)return null;var t1=new Date(d1),t2=new Date(d2);var cnt=0,cur=new Date(t1);if(t2<t1){var tmp=t1;t1=t2;t2=tmp;return-jo(d1,d2);}while(cur<t2){cur.setDate(cur.getDate()+1);var d=cur.getDay();if(d!==0&&d!==6)cnt++;}return cnt;}
+      var records=json.map(function(row){
+        var stat=(row['Completed Date']||'').trim();
+        var cr=row['WO Created On']||null,bk=row['Booking Date']||null,pt=row['Time to Promised']||null;
+        var mac=(row['Machine']||'N/A').trim();
+        return{wo:(row['WO Number']||'').trim(),link:(row['WO Link']||'').trim(),branch:(row['Branch']||'').trim(),machine:mac,client:(row['Account Name']||'').trim(),statut:stat,overdue:(row['Overdue Interval']||'').trim(),valeur:parseFloat(row['Total Van'])||0,sla_jo:getSLA(mac),jt:stat===DONE?jo(cr,bk):jo(cr,today.toISOString().slice(0,10)),retard:jo(pt,bk),is_open:stat!==DONE?1:0,semaine:sem};
+      }).filter(function(r){return r.wo&&r.branch;});
+      DB[sem]=records;saveDB();
+      fill.style.width='100%';
+      setTimeout(function(){prog.style.display='none';fill.style.width='0';},500);
+      showToast(records.length+' WO importés — '+sem+' ✓','ok');
+      updateImportHistory();renderDashboard();
+    }catch(err){prog.style.display='none';showToast('Erreur : '+err.message,'err');}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function updateImportHistory() {
+  var hist=document.getElementById('imp-hist');
+  var ss=sems().reverse();
+  if(!ss.length){hist.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--t3)">Aucun import</div>';return;}
+  hist.innerHTML=ss.map(function(s){
+    var k=kpi(DB[s]);
+    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--brd)"><span style="background:var(--navy);color:#93C5FD;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:DM Mono,monospace">'+s+'</span><span style="font-size:13px;font-weight:700">'+k.n+' WO</span><span class="bdg bg">TS '+k.ts.toFixed(1)+'%</span><span class="bdg brd">'+k.si+' SI</span><span style="margin-left:auto;font-size:12px;color:var(--t3)">'+(k.vt/1000).toFixed(0)+'k €</span><button onclick="delSem(\''+s+'\')" style="background:none;border:none;cursor:pointer;color:var(--t3)">🗑</button></div>';
+  }).join('');
+}
+function delSem(s){if(!confirm('Supprimer '+s+' ?'))return;delete DB[s];saveDB();updateImportHistory();renderDashboard();showToast(s+' supprimé','');}
+
+// ─── NAVIGATION ───────────────────────────────────────────────
+function goto(name,el) {
+  document.querySelectorAll('.page').forEach(function(p){p.className='page';});
+  document.querySelectorAll('.ntab').forEach(function(t){t.className='ntab';});
+  document.getElementById('page-'+name).className='page on';
+  if(el) el.className='ntab on';
+  if(name==='evolution') renderEvolution();
+  if(name==='wo'){initWOF();WO_PAGE=1;renderWO();}
+  if(name==='prep'){initPrepF();renderPrep();}
+  if(name==='admin') renderAdmin();
+  if(name==='upload') updateImportHistory();
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type) {
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(type?' '+type:'');
+  setTimeout(function(){t.className+=(' show');},10);
+  setTimeout(function(){t.className=t.className.replace(' show','');},3400);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DÉMARRAGE
+// ════════════════════════════════════════════════════════════════
+initUsers();
+var urlToken = checkURLToken();
+if (urlToken) {
+  startApp();
+}
+// Si pas de token URL → l'écran login reste visible (display:flex par défaut)
+</script>
+</body>
+</html>
