@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pilotage Logistique National</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0A1628;--navy2:#0D1F3C;--ink:#1C2333;
+  --surface:#F0F3F8;--card:#FFFFFF;--border:#DDE3EE;
+  --t1:#1C2333;--t2:#4B5675;--t3:#8A94A8;
+  --green:#16A34A;--green-l:#DCFCE7;
+  --amber:#D97706;--amber-l:#FEF3C7;
+  --red:#DC2626;--red-l:#FEE2E2;
+  --blue:#2563EB;--blue-l:#EFF6FF;
+  --teal:#0D9488;--teal-l:#F0FDFA;
+  --purple:#7C3AED;--purple-l:#F5F3FF;
+  --gray:#6B7280;--gray-l:#F3F4F6;
+  --accent:#2563EB;
+  font-size:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--t1);min-height:100vh}
+code,pre,.mono{font-family:'DM Mono',monospace}
+
+/* NAV */
+.topnav{background:var(--navy);display:flex;align-items:center;padding:0 24px;height:56px;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06)}
+.nav-logo{color:#fff;font-weight:600;font-size:15px;letter-spacing:-.02em;margin-right:32px;white-space:nowrap}
+.nav-logo span{color:#60A5FA}
+.nav-tabs{display:flex;gap:2px;flex:1}
+.nav-tab{padding:0 16px;height:56px;display:flex;align-items:center;color:var(--t3);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none}
+.nav-tab:hover{color:#fff}
+.nav-tab.active{color:#fff;border-bottom-color:#60A5FA}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge-week{background:#1D3461;color:#93C5FD;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace}
+
+/* LAYOUT */
+.page{display:none;padding:24px 28px;max-width:1600px;margin:0 auto}
+.page.active{display:block}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:16px;padding:48px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card);margin-bottom:20px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:var(--blue-l)}
+.upload-icon{font-size:40px;margin-bottom:12px}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.upload-sub{font-size:13px;color:var(--t3)}
+.upload-btn{background:var(--blue);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-top:16px;transition:background .15s}
+.upload-btn:hover{background:#1D4ED8}
+input[type=file]{display:none}
+
+/* SECTION LABELS */
+.section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--card);border-radius:14px;padding:20px;border:1px solid var(--border);position:relative;overflow:hidden;transition:box-shadow .15s}
+.kpi-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.kpi-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px}
+.kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:10px}
+.kpi-value{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.kpi-sub{font-size:12px;color:var(--t3)}
+.kpi-green .kpi-accent{background:var(--green)} .kpi-green .kpi-value{color:var(--green)}
+.kpi-amber .kpi-accent{background:var(--amber)} .kpi-amber .kpi-value{color:var(--amber)}
+.kpi-red .kpi-accent{background:var(--red)}     .kpi-red .kpi-value{color:var(--red)}
+.kpi-blue .kpi-accent{background:var(--blue)}   .kpi-blue .kpi-value{color:var(--blue)}
+.kpi-teal .kpi-accent{background:var(--teal)}   .kpi-teal .kpi-value{color:var(--teal)}
+.kpi-purple .kpi-accent{background:var(--purple)}.kpi-purple .kpi-value{color:var(--purple)}
+.kpi-gray .kpi-accent{background:var(--gray)}   .kpi-gray .kpi-value{color:var(--gray)}
+
+/* GRID 2 cols */
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+
+/* CARD */
+.card{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:20px}
+.card-title{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--t1)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--t3);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFBFF}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.badge-green{background:var(--green-l);color:var(--green)}
+.badge-blue{background:var(--blue-l);color:var(--blue)}
+.badge-gray{background:var(--gray-l);color:var(--gray)}
+.badge-purple{background:var(--purple-l);color:var(--purple)}
+.badge-teal{background:var(--teal-l);color:var(--teal)}
+
+/* STAT BARS */
+.stat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.stat-label{font-size:12px;color:var(--t2);min-width:130px}
+.stat-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.stat-count{font-size:12px;font-weight:600;color:var(--t1);min-width:40px;text-align:right}
+.stat-pct{font-size:11px;color:var(--t3);min-width:36px;text-align:right}
+
+/* OVERDUE CARDS */
+.ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.ov-card{border-radius:12px;padding:16px;border:1px solid transparent}
+.ov-card-red{background:var(--red-l);border-color:rgba(220,38,38,.2)}
+.ov-card-amber{background:var(--amber-l);border-color:rgba(217,119,6,.2)}
+.ov-card-blue{background:var(--blue-l);border-color:rgba(37,99,235,.2)}
+.ov-card-gray{background:var(--gray-l);border-color:rgba(107,114,128,.2)}
+.ov-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.ov-count{font-size:32px;font-weight:700;letter-spacing:-.04em;line-height:1;margin-bottom:4px}
+.ov-sub{font-size:11px}
+.ov-card-red .ov-label,.ov-card-red .ov-count,.ov-card-red .ov-sub{color:var(--red)}
+.ov-card-amber .ov-label,.ov-card-amber .ov-count,.ov-card-amber .ov-sub{color:var(--amber)}
+.ov-card-blue .ov-label,.ov-card-blue .ov-count,.ov-card-blue .ov-sub{color:var(--blue)}
+.ov-card-gray .ov-label,.ov-card-gray .ov-count,.ov-card-gray .ov-sub{color:var(--gray)}
+
+/* FILTERS */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--t1);background:var(--card);outline:none;font-family:inherit}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.ml-auto{margin-left:auto}
+.btn{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--t1);font-family:inherit;transition:all .15s}
+.btn:hover{background:var(--surface)}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#1D4ED8}
+
+/* CHART CONTAINERS */
+.chart-box{position:relative;height:220px}
+
+/* PAGINATION */
+.pag{display:flex;align-items:center;gap:8px;padding:12px 0;font-size:12px;color:var(--t3)}
+
+/* EVOL TABLE */
+.evol-table{width:100%;border-collapse:collapse;font-size:12px}
+.evol-table th{padding:8px 12px;text-align:center;background:var(--navy);color:#fff;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.evol-table th:first-child{text-align:left}
+.evol-table td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:center}
+.evol-table td:first-child{text-align:left;font-weight:600;font-size:12px}
+.evol-table tr:hover td{background:#FAFBFF}
+.evol-section-hdr td{background:var(--navy2);color:#93C5FD;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.evol-cur{background:var(--green-l)!important;font-weight:700;color:var(--green)}
+
+/* WO LINK */
+.wo-link{color:var(--blue);font-family:'DM Mono',monospace;font-size:11px;text-decoration:none}
+.wo-link:hover{text-decoration:underline}
+
+/* PREP TABLE */
+.prep-status{padding:3px 0;display:inline-block}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:340px;line-height:1.4}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#16A34A}
+.toast.error{background:#DC2626}
+
+/* PROG BAR in upload */
+.upload-progress{height:4px;background:var(--border);border-radius:2px;margin-top:12px;overflow:hidden;display:none}
+.upload-progress-fill{height:100%;background:var(--blue);width:0;transition:width .4s;border-radius:2px}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty-title{font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .ov-grid{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+}
+
+/* ─── LOGIN SCREEN ─── */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0A1628 0%,#1B3A6B 100%);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column}
+.login-box{background:#fff;border-radius:20px;padding:40px;width:380px;box-shadow:0 32px 100px rgba(0,0,0,.5)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-icon{font-size:36px;margin-bottom:8px}
+.login-logo-title{font-size:19px;font-weight:700;color:#0A1628;letter-spacing:-.02em}
+.login-logo-sub{font-size:11px;color:#8A94A8;margin-top:3px}
+.login-tabs{display:flex;gap:0;margin-bottom:22px;background:#EEF1F7;border-radius:10px;padding:3px}
+.login-tab{flex:1;padding:8px;text-align:center;font-size:12.5px;font-weight:500;border-radius:8px;cursor:pointer;color:#8A94A8;transition:all .15s}
+.login-tab.active{background:#fff;color:#0A1628;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:11.5px;font-weight:600;color:#4B5675;margin-bottom:5px}
+.login-field input{width:100%;padding:10px 13px;border:1.5px solid #DDE3EE;border-radius:9px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s;color:#1C2333}
+.login-field input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-btn{width:100%;padding:12px;background:#2563EB;color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:4px}
+.login-btn:hover{background:#1D4ED8}
+.login-err{color:#DC2626;font-size:12px;margin-top:10px;text-align:center;min-height:18px;font-weight:500}
+.login-token-wrap{display:flex;gap:7px}
+.login-token-wrap input{flex:1}
+
+/* ─── USER PILL ─── */
+.user-pill{background:rgba(255,255,255,.08);color:#93C5FD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:6px}
+.role-badge{background:#1e3a5f;color:#60A5FA;padding:1px 6px;border-radius:10px;font-size:9.5px;font-weight:700}
+.role-badge.admin{background:#2d1b69;color:#a78bfa}
+.nav-logout{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.nav-logout:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+
+/* ─── ADMIN PANEL ─── */
+.admin-user-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.admin-user-row:last-child{border-bottom:none}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.av-admin{background:#F5F3FF;color:#7C3AED}.av-viewer{background:#EFF6FF;color:#2563EB}
+.user-info{flex:1;min-width:0}
+.user-name{font-weight:600;font-size:13px}
+.user-meta{font-size:11px;color:var(--t3);margin-top:2px}
+.token-chip{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;background:var(--surface);padding:3px 8px;border-radius:6px;color:var(--t2);cursor:pointer;transition:background .1s;margin-top:5px}
+.token-chip:hover{background:var(--border)}
+
+/* ─── MODAL ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:18px;padding:30px;width:420px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px}
+.mf{margin-bottom:14px}
+.mf label{display:block;font-size:11.5px;font-weight:600;color:var(--t2);margin-bottom:5px}
+.mf input,.mf select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none}
+.mf input:focus{border-color:var(--blue)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn-sm{padding:5px 11px;font-size:11.5px}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🏭</div>
+      <div class="login-logo-title">Pilotage Logistique</div>
+      <div class="login-logo-sub">France — Accès sécurisé</div>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" onclick="switchTab('pwd')">🔑 Connexion</div>
+      <div class="login-tab" onclick="switchTab('tok')">🔗 Lien direct</div>
+    </div>
+    <div id="lt-pwd">
+      <div class="login-field"><label>Identifiant</label><input type="text" id="lu" placeholder="identifiant" autocomplete="username"></div>
+      <div class="login-field"><label>Mot de passe</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="login-btn" onclick="doLogin()">Se connecter →</button>
+    </div>
+    <div id="lt-tok" style="display:none">
+      <div class="login-field"><label>Token d'accès</label><div class="login-token-wrap"><input type="text" id="ltok" placeholder="token reçu par votre responsable" style="font-family:'DM Mono',monospace;font-size:12px"><button class="login-btn" style="width:auto;padding:10px 14px" onclick="doTokenLogin()">OK</button></div></div>
+      <div style="font-size:12px;color:var(--t3);margin-top:8px;line-height:1.6">Accès lecture seule transmis par le responsable logistique via un lien direct.</div>
+    </div>
+    <div class="login-err" id="lerr"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CRÉER UTILISATEUR ═══ -->
+<div class="modal-bg" id="modal-user">
+  <div class="modal">
+    <div class="modal-title">Créer un accès</div>
+    <div class="mf"><label>Identifiant</label><input type="text" id="nu" placeholder="ex: jdupont ou groupe-uk"></div>
+    <div class="mf"><label>Mot de passe</label><input type="password" id="np" placeholder="minimum 6 caractères"></div>
+    <div class="mf"><label>Rôle</label><select id="nr"><option value="viewer">👁 Viewer — lecture seule</option><option value="admin">⚙️ Admin — accès complet</option></select></div>
+    <div class="mf"><label>Note (facultatif)</label><input type="text" id="nn" placeholder="ex: Équipe UK, Commercial Bordeaux..."></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="createUser()">Créer l'accès ✓</button>
+    </div>
+  </div>
+</div>
+
+<nav class="topnav">
+  <div class="nav-logo">Pilotage <span>Logistique</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">📊 Tableau de bord</button>
+    <button class="nav-tab" onclick="showPage('evolution')">📈 Évolution KPI</button>
+    <button class="nav-tab" onclick="showPage('wo')">📋 Suivi WO</button>
+    <button class="nav-tab" onclick="showPage('prep')">🔧 Préparation</button>
+    <button class="nav-tab admin-only" onclick="showPage('upload',this)" style="display:none">⬆️ Import</button>
+  </div>
+  <div class="nav-right">
+    <span class="badge-week" id="badge-week">W— · Aucune donnée</span>
+    <div class="user-pill"><span id="nav-username">—</span><span class="role-badge" id="nav-role">—</span></div>
+    <button class="nav-logout" onclick="doLogout()">Déconnexion</button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE : TABLEAU DE BORD
+═══════════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <!-- KPI row 1 -->
+  <div class="kpi-grid" id="kpi-row1">
+    <div class="kpi-card kpi-green"><div class="kpi-accent"></div><div class="kpi-label">Taux de service</div><div class="kpi-value" id="k-ts">—</div><div class="kpi-sub" id="k-ts-sub">Chargez des données</div></div>
+    <div class="kpi-card kpi-blue"><div class="kpi-accent"></div><div class="kpi-label">Service dans les délais</div><div class="kpi-value" id="k-tss">—</div><div class="kpi-sub" id="k-tss-sub">vs date promise</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-accent"></div><div class="kpi-label">Stock Issue ouverts</div><div class="kpi-value" id="k-si">—</div><div class="kpi-sub" id="k-si-sub">—</div></div>
+    <div class="kpi-card kpi-teal"><div class="kpi-accent"></div><div class="kpi-label">WO ouverts</div><div class="kpi-value" id="k-open">—</div><div class="kpi-sub">Non encore livrées</div></div>
+  </div>
+  <!-- KPI row 2 -->
+  <div class="kpi-grid" style="margin-top:-4px">
+    <div class="kpi-card kpi-amber"><div class="kpi-accent"></div><div class="kpi-label">Délai moyen traitement</div><div class="kpi-value" id="k-jt">—</div><div class="kpi-sub" id="k-jt-sub">Jours ouvrés</div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-accent"></div><div class="kpi-label">En préparation</div><div class="kpi-value" id="k-prep">—</div><div class="kpi-sub">À traiter cette semaine</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-accent"></div><div class="kpi-label">Urgences 4-7 jours</div><div class="kpi-value" id="k-urg4">—</div><div class="kpi-sub">Priorité maximale</div></div>
+    <div class="kpi-card kpi-blue"><div class="kpi-accent"></div><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" id="k-val">—</div><div class="kpi-sub">Total WO analysés</div></div>
+  </div>
+
+  <!-- Overdue -->
+  <div class="section-title">Overdue interval — ancienneté des WO</div>
+  <div class="ov-grid">
+    <div class="ov-card ov-card-red"><div class="ov-label">4 – 7 jours</div><div class="ov-count" id="ov-4">—</div><div class="ov-sub" id="ov-4s">—</div></div>
+    <div class="ov-card ov-card-amber"><div class="ov-label">8 – 14 jours</div><div class="ov-count" id="ov-8">—</div><div class="ov-sub" id="ov-8s">—</div></div>
+    <div class="ov-card ov-card-blue"><div class="ov-label">15 – 30 jours</div><div class="ov-count" id="ov-15">—</div><div class="ov-sub" id="ov-15s">—</div></div>
+    <div class="ov-card ov-card-gray"><div class="ov-label">+ 30 jours</div><div class="ov-count" id="ov-30">—</div><div class="ov-sub" id="ov-30s">—</div></div>
+  </div>
+
+  <!-- Agences + Statuts -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Performance par agence</div>
+      <div class="tbl-wrap">
+        <table id="tbl-agences">
+          <thead><tr><th>Agence</th><th>WO</th><th>SI</th><th>Délai moy.</th><th>TS %</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Répartition des statuts</div>
+      <div id="stat-bars"></div>
+      <div class="chart-box" style="height:180px;margin-top:16px">
+        <canvas id="chart-statuts"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Issue prioritaire -->
+  <div class="section-title" style="color:var(--red)">Stock Issue — affaires en attente · triées par urgence</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table id="tbl-si">
+        <thead><tr><th>Urgence</th><th>Agence</th><th>Machine</th><th>SLA</th><th>Client</th><th>WO Number</th><th>Délai ouvert</th><th>Valeur €</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE : ÉVOLUTION KPI
+═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-evolution">
+  <div class="grid3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">Taux de service — évolution</div>
+      <div class="chart-box"><canvas id="chart-ts-evol"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Délai moyen (jo) — évolution</div>
+      <div class="chart-box"><canvas id="chart-jt-evol"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">WO par statut — évolution</div>
+      <div class="chart-box"><canvas id="chart-wo-evol"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tableau KPI semaine par semaine</div>
+    <div class="tbl-wrap">
+      <table class="evol-table" id="tbl-evol">
+        <thead><tr id="evol-hdr"><th>Indicateur</th></tr></thead>
+        <tbody id="evol-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-top:16px" class="card">
+    <div class="card-title">Taux de service par agence</div>
+    <div class="tbl-wrap">
+      <table class="evol-table" id="tbl-ts-ag">
+        <thead><tr id="ts-ag-hdr"><th>Agence</th></tr></thead>
+        <tbody id="ts-ag-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE : SUIVI WO
+═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-wo">
+  <div class="filter-bar">
+    <select id="f-sem" onchange="renderWO()"><option value="">Toutes semaines</option></select>
+    <select id="f-branch" onchange="renderWO()"><option value="">Toutes agences</option></select>
+    <select id="f-machine" onchange="renderWO()"><option value="">Toutes machines</option></select>
+    <select id="f-statut" onchange="renderWO()">
+      <option value="">Tous statuts</option>
+      <option value="Stock Issue">Stock Issue</option>
+      <option value="in preparation W21">En préparation</option>
+      <option value="delivered, WO unscheduled">Livré</option>
+      <option value="customer machines no need">Machine client</option>
+    </select>
+    <select id="f-ov" onchange="renderWO()">
+      <option value="">Toutes urgences</option>
+      <option value="4-7 days">4-7 jours</option>
+      <option value="8-14 days">8-14 jours</option>
+      <option value="15-30 days">15-30 jours</option>
+      <option value="+30 days">+30 jours</option>
+    </select>
+    <input type="text" id="f-search" placeholder="Rechercher WO, client…" oninput="renderWO()" style="min-width:180px">
+    <button class="btn ml-auto" onclick="resetFilters()">Réinitialiser</button>
+    <span id="wo-count" style="font-size:12px;color:var(--t3)"></span>
+  </div>
+  <div class="card" style="padding:0">
+    <div class="tbl-wrap">
+      <table id="tbl-wo">
+        <thead><tr>
+          <th>WO Number</th><th>Sem.</th><th>Agence</th><th>Machine</th><th>SLA</th>
+          <th>Client</th><th>Statut</th><th>Urgence</th>
+          <th>Jo ouverts</th><th>Jo traitement</th><th>Retard</th><th>Valeur €</th>
+        </tr></thead>
+        <tbody id="wo-body"></tbody>
+      </table>
+    </div>
+    <div class="pag" style="padding:12px 16px" id="wo-pag"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE : LISTE PRÉPARATION
+═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-prep">
+  <div class="filter-bar">
+    <select id="f-prep-sem" onchange="renderPrep()"><option value="">Toutes semaines</option></select>
+    <select id="f-prep-branch" onchange="renderPrep()"><option value="">Toutes agences</option></select>
+    <span id="prep-count" style="font-size:12px;color:var(--t3)"></span>
+  </div>
+
+  <!-- Besoins vs stock (résumé machines) -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">Besoins machines à préparer</div>
+    <div class="tbl-wrap">
+      <table id="tbl-machines">
+        <thead><tr><th>Machine</th><th>WO total</th><th>Stock Issue</th><th>En préparation</th><th>SLA type</th><th>Agences</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Liste WO à préparer -->
+  <div class="section-title" style="color:var(--amber)">Affaires à préparer — Stock Issue + En préparation (triées par urgence)</div>
+  <div class="card" style="padding:0">
+    <div class="tbl-wrap">
+      <table id="tbl-prep">
+        <thead><tr>
+          <th>Urgence</th><th>Agence</th><th>Machine</th><th>SLA cible</th>
+          <th>Client</th><th>WO Number</th><th>Délai ouvert</th><th>vs SLA</th><th>Valeur €</th>
+        </tr></thead>
+        <tbody id="prep-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE : IMPORT
+═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-upload">
+  <div style="max-width:700px;margin:0 auto">
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="e=>e.preventDefault()" ondrop="handleDrop(event)">
+      <div class="upload-icon">📂</div>
+      <div class="upload-title">Importer un export BI</div>
+      <div class="upload-sub">Glissez votre fichier Excel (.xlsx) ou cliquez pour parcourir<br>Format : Export BI placement WXX-YYYY</div>
+      <div>
+        <input type="text" id="semaine-input" placeholder="Semaine (ex: W22)" onclick="event.stopPropagation()"
+               style="margin-top:16px;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;text-align:center">
+      </div>
+      <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choisir un fichier</button>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
+      <div class="upload-progress" id="upload-progress"><div class="upload-progress-fill" id="upload-fill"></div></div>
+    </div>
+
+    <!-- Historique imports -->
+    <div class="card">
+      <div class="card-title">Historique des imports</div>
+      <div id="import-history">
+        <div class="empty-state" style="padding:30px 0">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">Aucun import effectué</div>
+          <div>Importez votre premier fichier BI pour commencer</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Guide d'import</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.7">
+        <p style="margin-bottom:8px"><strong>1.</strong> Exporter depuis Dynamics CRM — même format que l'export initial</p>
+        <p style="margin-bottom:8px"><strong>2.</strong> Saisir le numéro de semaine (ex: W22) dans le champ ci-dessus</p>
+        <p style="margin-bottom:8px"><strong>3.</strong> Glisser le fichier ou cliquer pour sélectionner</p>
+        <p style="margin-bottom:8px"><strong>4.</strong> L'outil calcule automatiquement tous les KPI et met à jour l'évolution</p>
+        <p style="margin-bottom:0"><strong>Colonnes requises :</strong> <code>WO Number, Branch, Machine, Completed Date, Overdue Interval, Total Van, WO Created On, Booking Date, Time to Promised, Segmentation</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+//  SYSTÈME D'AUTHENTIFICATION
+// ═══════════════════════════════════════════════════════════════
+let SESSION = null;
+
+function hashPwd(u, p) {
+  const str = u + '::' + p + '::logi2026salt';
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) + h) + str.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(36) + '_' + str.length.toString(36);
+}
+function genToken() {
+  const c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({length:28}, () => c[Math.floor(Math.random() * c.length)]).join('');
+}
+function apiGet(key) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+  catch { return null; }
+}
+function apiSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn(e); }
+}
+
+function initUsers() {
+  let users = apiGet('logi_users_v2');
+  if (!users || !Object.keys(users).length) {
+    const adminToken = genToken();
+    users = {
+      admin: { hash: hashPwd('admin','logi2026!'), role: 'admin', token: adminToken, note: 'Administrateur principal', active: true, created: new Date().toISOString().slice(0,10) }
+    };
+    apiSet('logi_users_v2', users);
+  }
+  return users;
+}
+
+function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const err = document.getElementById('lerr');
+  if (!u || !p) { err.textContent = 'Remplissez tous les champs.'; return; }
+  err.textContent = 'Connexion…';
+  const users = apiGet('logi_users_v2');
+  if (!users || !users[u] || !users[u].active) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+  if (users[u].hash !== hashPwd(u, p)) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+  SESSION = { username: u, role: users[u].role, token: users[u].token };
+  startApp();
+}
+
+function doTokenLogin() {
+  const t = document.getElementById('ltok').value.trim();
+  const err = document.getElementById('lerr');
+  if (!t) { err.textContent = 'Saisissez le token.'; return; }
+  err.textContent = 'Vérification…';
+  const users = apiGet('logi_users_v2');
+  if (!users) { err.textContent = 'Erreur de connexion.'; return; }
+  const found = Object.entries(users).find(([, u]) => u.token === t && u.active);
+  if (!found) { err.textContent = 'Token invalide ou expiré.'; return; }
+  SESSION = { username: found[0], role: found[1].role, token: t };
+  startApp();
+}
+
+function checkURLToken() {
+  const t = new URLSearchParams(window.location.search).get('token');
+  if (!t) return false;
+  const users = apiGet('logi_users_v2');
+  if (!users) return false;
+  const found = Object.entries(users).find(([, u]) => u.token === t && u.active);
+  if (!found) return false;
+  SESSION = { username: found[0], role: found[1].role, token: t };
+  return true;
+}
+
+function doLogout() {
+  SESSION = null;
+  document.getElementById('app-nav').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('lp').value = '';
+  document.getElementById('lerr').textContent = '';
+}
+
+function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-nav').style.display = 'flex';
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = SESSION.role === 'admin' ? 'flex' : 'none';
+  });
+  document.getElementById('nav-username').textContent = SESSION.username;
+  const rb = document.getElementById('nav-role');
+  rb.textContent = SESSION.role === 'admin' ? 'Admin' : 'Viewer';
+  rb.className = 'role-badge' + (SESSION.role === 'admin' ? ' admin' : '');
+  loadDB(); renderDashboard();
+  if (SESSION.role === 'admin') { updateImportHistory(); }
+}
+
+function switchTab(t) {
+  document.getElementById('lt-pwd').style.display = t === 'pwd' ? 'block' : 'none';
+  document.getElementById('lt-tok').style.display = t === 'tok' ? 'block' : 'none';
+  document.querySelectorAll('.login-tab').forEach((el, i) =>
+    el.classList.toggle('active', (t === 'pwd' && i === 0) || (t === 'tok' && i === 1)));
+  document.getElementById('lerr').textContent = '';
+}
+
+// ─── Gestion utilisateurs ───────────────────────────────────────────────────
+function openModal() { document.getElementById('modal-user').classList.add('open'); }
+function closeModal() {
+  document.getElementById('modal-user').classList.remove('open');
+  ['nu','np','nn'].forEach(id => document.getElementById(id).value = '');
+}
+
+function createUser() {
+  const u = document.getElementById('nu').value.trim();
+  const p = document.getElementById('np').value;
+  const role = document.getElementById('nr').value;
+  const note = document.getElementById('nn').value.trim();
+  if (!u || !p) { toast('Remplissez identifiant et mot de passe', 'error'); return; }
+  if (p.length < 6) { toast('Mot de passe trop court (6 car. min)', 'error'); return; }
+  let users = apiGet('logi_users_v2') || {};
+  if (users[u]) { toast('Cet identifiant existe déjà', 'error'); return; }
+  users[u] = { hash: hashPwd(u, p), role, token: genToken(), note, active: true, created: new Date().toISOString().slice(0, 10) };
+  apiSet('logi_users_v2', users);
+  closeModal(); toast('Accès créé : ' + u + ' (' + role + ')', 'success'); renderAdmin();
+}
+
+function toggleUser(name, active) {
+  let users = apiGet('logi_users_v2') || {};
+  if (users[name]) { users[name].active = active; apiSet('logi_users_v2', users); }
+  toast(active ? name + ' réactivé' : name + ' suspendu', ''); renderAdmin();
+}
+
+function deleteUser(name) {
+  if (!confirm('Supprimer définitivement l'accès "' + name + '" ?')) return;
+  let users = apiGet('logi_users_v2') || {};
+  delete users[name]; apiSet('logi_users_v2', users);
+  toast(name + ' supprimé', ''); renderAdmin();
+}
+
+function regenToken(name) {
+  let users = apiGet('logi_users_v2') || {};
+  if (users[name]) { users[name].token = genToken(); apiSet('logi_users_v2', users); }
+  toast('Token régénéré — partagez le nouveau lien', 'success'); renderAdmin();
+}
+
+function renderAdmin() {
+  const users = apiGet('logi_users_v2') || {};
+  const base = window.location.href.split('?')[0];
+  const list = document.getElementById('users-list');
+  list.innerHTML = Object.entries(users).map(([name, u]) => `
+    <div class="admin-user-row">
+      <div class="avatar ${u.role === 'admin' ? 'av-admin' : 'av-viewer'}">${name[0].toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${name} ${!u.active ? '<span style="color:var(--red);font-size:10.5px">(suspendu)</span>' : ''}</div>
+        <div class="user-meta">${u.role === 'admin' ? '⚙️ Admin' : '👁 Viewer'} · ${u.created || '—'}${u.note ? ' · ' + u.note : ''}</div>
+        <div class="token-chip" onclick="copyTxt('${base}?token=${u.token}');toast('Lien copié !','success')" title="Cliquer pour copier">🔗 ${u.token.slice(0,14)}…</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${name !== 'admin' ? `
+          <button class="btn btn-sm" onclick="regenToken('${name}')" title="Régénérer token">🔄</button>
+          <button class="btn btn-sm" onclick="toggleUser('${name}',${!u.active})">${u.active ? 'Suspendre' : 'Réactiver'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${name}')">Supprimer</button>
+        ` : '<span style="font-size:10.5px;color:var(--t3)">Compte principal</span>'}
+      </div>
+    </div>`).join('');
+
+  const sl = document.getElementById('share-links');
+  sl.innerHTML = Object.entries(users).filter(([, u]) => u.active).map(([name, u]) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-weight:600;font-size:12.5px;min-width:90px">${name}</span>
+      <span class="badge ${u.role === 'admin' ? 'badge-purple' : 'badge-blue'}">${u.role}</span>
+      <code style="font-size:10px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${base}?token=${u.token}</code>
+      <button class="btn btn-sm" onclick="copyTxt('${base}?token=${u.token}');toast('Lien copié !','success')">Copier</button>
+    </div>`).join('');
+}
+
+function copyTxt(txt) {
+  navigator.clipboard.writeText(txt).catch(() => {
+    const el = document.createElement('textarea'); el.value = txt; document.body.appendChild(el); el.select(); document.execCommand('copy'); el.remove();
+  });
+}
+
+// Init
+initUsers();
+const auto = checkURLToken();
+if (auto) { startApp(); }
+
+// ═══════════════════════════════════════════════════════════════
+// DONNÉES & ÉTAT
+// ═══════════════════════════════════════════════════════════════
+const DONE  = 'delivered, WO unscheduled';
+const PREP  = 'in preparation W21';
+const ISSUE = 'Stock Issue';
+
+// SLA mapping (depuis recap_SLA.xlsx)
+const SLA_MAP = {
+  'M100':10,'M100B':10,'M101':10,'M102':10,'M102B':10,'M104':10,'M190':10,'M190B':10,
+  'M195B':10,'M212':10,'M280':10,'M315':10,'M316':10,'M730':10,'M765':10,'M950':10,
+  'ESK175':10,'ESK300':10,'SK75':10,'M105':30,'M115':30,'M170':30,'M195':30,'M300':30,
+  'M440':30,'SK150':30,'SK300':30,'SK400':30,'M240':60,'M245':60,'M275':60,'M312':60,
+  'M320':60,'ESK000':60,'ESK400':60,'SK600':60,'SK1000':60
+};
+function getSLA(machine) {
+  const b = (machine||'').toUpperCase().match(/^([A-Z]+\d+)/);
+  return b ? (SLA_MAP[b[1]] || 14) : 14;
+}
+
+// Storage des données par semaine
+let DB = {}; // { "W21": [{...},...], "W22": [...] }
+let charts = {};
+let woPage = 1; const WO_PER_PAGE = 25;
+
+// Charger depuis localStorage
+function loadDB() {
+  try { DB = JSON.parse(localStorage.getItem('logi_db') || '{}'); }
+  catch(e) { DB = {}; }
+}
+function saveDB() {
+  try { localStorage.setItem('logi_db', JSON.stringify(DB)); }
+  catch(e) { toast('Stockage plein — données en mémoire uniquement', 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT — données W21 embarquées
+// ═══════════════════════════════════════════════════════════════
+const W21_DATA = [{"wo":"WO-000989463","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=16F5C85F-D64E-F111-BEC6-70A8A5779237","branch":"Angers","machine":"SK400","client":"SONOCO METAL PACKAGING FRANCE SAS","tier":"","statut":"Stock Issue","overdue":"4-7 days","seg":"Refurb to Order","valeur":14183.39,"sla_jo":30,"sla_type":"Refurb to Order","jt":5,"retard":-2,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-13","dt_booking":"2026-05-25","semaine":"W21"},{"wo":"WO-000989741","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=2EA7BAD5-F94E-F111-BEC6-70A8A5779237","branch":"Marseille","machine":"M320","client":"NAVAL GROUP TOULON  - CA 15","tier":"","statut":"in preparation W21","overdue":"4-7 days","seg":"Stocked Machines","valeur":32663.54,"sla_jo":10,"sla_type":"Stocked Machines","jt":5,"retard":-2,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-13","dt_booking":"2026-06-10","semaine":"W21"},{"wo":"WO-000992257","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=BA0448C7-854F-F111-BEC6-000D3A0BAA9D","branch":"Paris-Nord","machine":"M190","client":"FENWICK LINDE","tier":"","statut":"in preparation W21","overdue":"4-7 days","seg":"Stocked Machines","valeur":9539.92,"sla_jo":10,"sla_type":"Stocked Machines","jt":4,"retard":-2,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-14","dt_booking":"2026-06-02","semaine":"W21"},{"wo":"WO-000973533","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=5F12ACE4-694D-F111-BEC6-7CED8D9B1246","branch":"Lille","machine":"M190","client":"Valenciano","tier":"","statut":"in preparation W21","overdue":"4-7 days","seg":"Stocked Machines","valeur":2351.96,"sla_jo":10,"sla_type":"Stocked Machines","jt":7,"retard":0,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-11","dt_booking":"2026-05-22","semaine":"W21"},{"wo":"WO-000973525","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=F372DA05-594D-F111-BEC6-7C1E52792EE7","branch":"Lille","machine":"M765","client":"Valenciano","tier":"","statut":"in preparation W21","overdue":"4-7 days","seg":"Stocked Machines","valeur":1919.97,"sla_jo":10,"sla_type":"Stocked Machines","jt":7,"retard":0,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-11","dt_booking":"2026-05-22","semaine":"W21"},{"wo":"WO-000973338","link":"https://operations-qs-prod.crm11.dynamics.com/main.aspx?appid=a2ea5757-82d8-ed11-a7c7-0022481b5bbc&newWindow=true&pagetype=entityrecord&etn=msdyn_workorder&id=5900FB93-3B4D-F111-BEC6-7C1E521D951D","branch":"Lille","machine":"M713","client":"REGNIER","tier":"","statut":"Stock Issue","overdue":"4-7 days","seg":"Stocked Machines","valeur":4503.85,"sla_jo":10,"sla_type":"Stocked Machines","jt":7,"retard":-2,"is_open":1,"agr_type":"Scheduled Billing","dt_created":"2026-05-11","dt_booking":"2026-05-18","semaine":"W21"},{"wo":"WO-000971308","branch":"Rouen","machine":"M300","client":"TECHNICENTRE DES QUATRES MARES N°45","statut":"Stock Issue","overdue":"8-14 days","seg":"Refurb to Order","valeur":6727.76,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000971227","branch":"Caen","machine":"M190","client":"CIP","statut":"in preparation W21","overdue":"8-14 days","seg":"Stocked Machines","valeur":0,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000971383","branch":"Paris-Nord","machine":"M190","client":"BABYNOV","statut":"in preparation W21","overdue":"8-14 days","seg":"Stocked Machines","valeur":4314.44,"sla_jo":10,"jt":9,"retard":-4,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000970578","branch":"Toulouse","machine":"M195","client":"GOODRICH AEROSPACE EUROPE SAS","statut":"in preparation W21","overdue":"8-14 days","seg":"Refurb to Order","valeur":9568,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000970584","branch":"Toulouse","machine":"M195","client":"GOODRICH AEROSPACE EUROPE SAS","statut":"in preparation W21","overdue":"8-14 days","seg":"Refurb to Order","valeur":9568,"sla_jo":30,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000977561","branch":"Lille","machine":"M102","client":"Eurotunnel BAT F35","statut":"in preparation W21","overdue":"8-14 days","seg":"Stocked Machines","valeur":14531.92,"sla_jo":10,"jt":6,"retard":-2,"is_open":1,"dt_created":"2026-05-12","semaine":"W21","link":""},{"wo":"WO-000977550","branch":"Lille","machine":"M312","client":"Eurotunnel BAT F35","statut":"in preparation W21","overdue":"8-14 days","seg":"Stocked Machines","valeur":25667.98,"sla_jo":10,"jt":6,"retard":-1,"is_open":1,"dt_created":"2026-05-12","semaine":"W21","link":""},{"wo":"WO-000967927","branch":"Lille","machine":"SK400","client":"Eurotunnel BAT F35","statut":"Stock Issue","overdue":"8-14 days","seg":"Refurb to Order","valeur":30659.98,"sla_jo":30,"jt":10,"retard":-2,"is_open":1,"dt_created":"2026-05-06","semaine":"W21","link":""},{"wo":"WO-000971388","branch":"Lille","machine":"M100","client":"TECHNICENTRE DE HELLEMMES BAT 3 PONTS MOTEURS","statut":"in preparation W21","overdue":"8-14 days","seg":"Stocked Machines","valeur":8132.28,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000958430","branch":"Paris-Ouest","machine":"M190","client":"ELVI MAN TRUCK","statut":"delivered, WO unscheduled","overdue":"8-14 days","seg":"Stocked Machines","valeur":1812.02,"sla_jo":10,"jt":2,"retard":-1,"is_open":0,"dt_created":"2026-05-05","semaine":"W21","link":""},{"wo":"WO-000958451","branch":"Caen","machine":"M100","client":"LEROY GARAGE","statut":"delivered, WO unscheduled","overdue":"8-14 days","seg":"Stocked Machines","valeur":2363.99,"sla_jo":10,"jt":2,"retard":-1,"is_open":0,"dt_created":"2026-05-05","semaine":"W21","link":""},{"wo":"WO-000951587","branch":"Troyes","machine":"M101","client":"ALUMINIUM FRANCE EXTRUSION","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Refurb to Order","valeur":4721.6,"sla_jo":30,"jt":10,"retard":-1,"is_open":0,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000951456","branch":"Paris-Ouest","machine":"ESK300","client":"CALISTE MARQUIS","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":11843.98,"sla_jo":10,"jt":2,"retard":-2,"is_open":0,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000951751","branch":"Quimper","machine":"M190","client":"BASE NAVALE BREST","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":3086.33,"sla_jo":10,"jt":15,"retard":-1,"is_open":0,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000947829","branch":"Angers","machine":"M730","client":"THE TRUCK COMPANY FRANCE","statut":"Stock Issue","overdue":"15-30 days","seg":"Stocked Machines","valeur":4139.96,"sla_jo":10,"jt":15,"retard":-2,"is_open":1,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000947804","branch":"Dijon","machine":"M190","client":"KEOLIS SUD LORRAINE","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":4407.94,"sla_jo":10,"jt":15,"retard":-3,"is_open":1,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000949893","branch":"Paris-Ouest","machine":"M730","client":"SAFIR","statut":"Stock Issue","overdue":"15-30 days","seg":"Stocked Machines","valeur":6383.91,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000949995","branch":"Paris-Nord","machine":"M190","client":"COCHERY ILE DE FRANCE","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":4070.57,"sla_jo":10,"jt":14,"retard":-7,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000947767","branch":"Paris-Nord","machine":"M190","client":"DILT","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":5196,"sla_jo":10,"jt":15,"retard":-19,"is_open":1,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000947797","branch":"Paris-Ouest","machine":"M190","client":"CSAG 78","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":6424.47,"sla_jo":10,"jt":6,"retard":-1,"is_open":0,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000931241","branch":"Lyon","machine":"SK300","client":"SCHAEFFLER FRANCE","statut":"Stock Issue","overdue":"15-30 days","seg":"Stocked Machines","valeur":15362.88,"sla_jo":10,"jt":17,"retard":-1,"is_open":1,"dt_created":"2026-04-27","semaine":"W21","link":""},{"wo":"WO-000937635","branch":"Montpellier","machine":"M713","client":"ETABLISSEMENT MATERIEL TRAIN JAUNE","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":4919.98,"sla_jo":10,"jt":16,"retard":-2,"is_open":1,"dt_created":"2026-04-28","semaine":"W21","link":""},{"wo":"WO-000931185","branch":"Vierzon","machine":"M100","client":"LITHOPRESS","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":3685.1,"sla_jo":10,"jt":17,"retard":-1,"is_open":1,"dt_created":"2026-04-27","semaine":"W21","link":""},{"wo":"WO-000968327","branch":"Toulouse","machine":"SK150","client":"ABEL","statut":"Stock Issue","overdue":"15-30 days","seg":"Stocked Machines","valeur":0,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000929701","branch":"Lille","machine":"M765","client":"AFPA LOMME","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":987.33,"sla_jo":10,"jt":6,"retard":-2,"is_open":0,"dt_created":"2026-04-24","semaine":"W21","link":""},{"wo":"WO-000931256","branch":"Quimper","machine":"M100","client":"ARIANEGROUP CROZON","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":3571.09,"sla_jo":10,"jt":14,"retard":0,"is_open":0,"dt_created":"2026-04-27","semaine":"W21","link":""},{"wo":"WO-000958523","branch":"Toulouse","machine":"M104","client":"SAFRAN POWER UNITS SAS","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":20780.76,"sla_jo":10,"jt":11,"retard":null,"is_open":1,"dt_created":"2026-05-05","semaine":"W21","link":""},{"wo":"WO-000971002","branch":"Toulouse","machine":"M104","client":"SAFRAN POWER UNITS SAS","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":20780.76,"sla_jo":10,"jt":9,"retard":-2,"is_open":1,"dt_created":"2026-05-07","semaine":"W21","link":""},{"wo":"WO-000953297","branch":"Paris-Nord","machine":"ESK300","client":"TECHNICENTRE EST EUROPEEN ESK300","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":16011,"sla_jo":10,"jt":30,"retard":-2,"is_open":0,"dt_created":"2026-05-05","semaine":"W21","link":""},{"wo":"WO-000929607","branch":"Paris-Nord","machine":"M190","client":"RATP RDS","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":4469.79,"sla_jo":10,"jt":18,"retard":-37,"is_open":1,"dt_created":"2026-04-24","semaine":"W21","link":""},{"wo":"WO-000908581","branch":"Montpellier","machine":"M100","client":"CITROEN PEUGEOT GGH TRESSOL CHABRIER","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":2129.01,"sla_jo":10,"jt":13,"retard":-17,"is_open":0,"dt_created":"2026-04-17","semaine":"W21","link":""},{"wo":"WO-000908567","branch":"Metz","machine":"SK150","client":"PONTICELLI EGZ","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":12831.6,"sla_jo":10,"jt":23,"retard":-2,"is_open":1,"dt_created":"2026-04-17","semaine":"W21","link":""},{"wo":"WO-000903969","branch":"Paris-Ouest","machine":"SK150","client":"RATP INFRASTRUCTURE Bâtiment B 1","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":8619.39,"sla_jo":10,"jt":25,"retard":-2,"is_open":1,"dt_created":"2026-04-15","semaine":"W21","link":""},{"wo":"WO-000967495","branch":"Bordeaux","machine":"SK75","client":"MICRO CONTROLE SPECTRA PHYSICS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Refurb to Order","valeur":7904.98,"sla_jo":10,"jt":8,"retard":-2,"is_open":0,"dt_created":"2026-05-06","semaine":"W21","link":""},{"wo":"WO-000903838","branch":"Metz","machine":"M312","client":"BERGERAT MONNOYEUR","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":2110.62,"sla_jo":60,"jt":17,"retard":0,"is_open":0,"dt_created":"2026-04-15","semaine":"W21","link":""},{"wo":"WO-000903190","branch":"Strasbourg","machine":"SK150","client":"Stockmeier Uréthanes France","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":6779.96,"sla_jo":10,"jt":25,"retard":-2,"is_open":1,"dt_created":"2026-04-15","semaine":"W21","link":""},{"wo":"WO-000888151","branch":"Paris-Nord","machine":"M102","client":"TECHNIS LE BOURGET","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":1517.54,"sla_jo":10,"jt":27,"retard":-42,"is_open":1,"dt_created":"2026-04-13","semaine":"W21","link":""},{"wo":"WO-000907345","branch":"Paris-Nord","machine":"M300","client":"ASTERYA","statut":"Stock Issue","overdue":"+30 days","seg":"Refurb to Order","valeur":5531.96,"sla_jo":30,"jt":24,"retard":-32,"is_open":1,"dt_created":"2026-04-16","semaine":"W21","link":""},{"wo":"WO-000886905","branch":"Rouen","machine":"M765","client":"JOCQUIN ETS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":6083.22,"sla_jo":10,"jt":15,"retard":0,"is_open":0,"dt_created":"2026-04-10","semaine":"W21","link":""},{"wo":"WO-000906928","branch":"Paris-Sud","machine":"M100","client":"CTM ATHIS MONS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":4427.94,"sla_jo":10,"jt":7,"retard":-2,"is_open":0,"dt_created":"2026-04-16","semaine":"W21","link":""},{"wo":"WO-000885501","branch":"Strasbourg","machine":"M100","client":"ATELIERS ET&S SAS 05","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":2047.5,"sla_jo":10,"jt":10,"retard":-1,"is_open":0,"dt_created":"2026-04-09","semaine":"W21","link":""},{"wo":"WO-000854408","branch":"Annecy","machine":"M100","client":"TRANSDEV CHAMONIX","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":1702.82,"sla_jo":10,"jt":8,"retard":0,"is_open":0,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000989803","branch":"Paris-Ouest","machine":"M190","client":"SNCF VOYAGEURS MANTES LA JOLIE","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":2472.47,"sla_jo":10,"jt":4,"retard":-1,"is_open":1,"dt_created":"2026-05-14","semaine":"W21","link":""},{"wo":"WO-000847500","branch":"Paris-Nord","machine":"M713","client":"EIV MOULIN NEUF 25810","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3406.1,"sla_jo":10,"jt":8,"retard":-29,"is_open":0,"dt_created":"2026-03-30","semaine":"W21","link":""},{"wo":"WO-000846943","branch":"Paris-Nord","machine":"M713","client":"LES STRATIFIES STRATIVER-HUTCHINSON","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":5850,"sla_jo":10,"jt":13,"retard":-40,"is_open":0,"dt_created":"2026-03-30","semaine":"W21","link":""},{"wo":"WO-000847494","branch":"Paris-Nord","machine":"SK150","client":"EIV MOULIN NEUF 25810","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":11011.07,"sla_jo":10,"jt":37,"retard":-29,"is_open":1,"dt_created":"2026-03-30","semaine":"W21","link":""},{"wo":"WO-000846718","branch":"Paris-Ouest","machine":"M190","client":"ABM","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":5711.96,"sla_jo":10,"jt":15,"retard":-43,"is_open":0,"dt_created":"2026-03-30","semaine":"W21","link":""},{"wo":"WO-000846934","branch":"Toulouse","machine":"M190","client":"Fives Machining Forest line Capdenac","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3804,"sla_jo":10,"jt":12,"retard":-46,"is_open":0,"dt_created":"2026-03-30","semaine":"W21","link":""},{"wo":"WO-000845103","branch":"Quimper","machine":"M730","client":"RD QUIMPER BRETAGNE OCCIDENTALE","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":1349.57,"sla_jo":10,"jt":21,"retard":-58,"is_open":0,"dt_created":"2026-03-27","semaine":"W21","link":""},{"wo":"WO-000842844","branch":"Caen","machine":"M104","client":"VERESCENCE ORNE","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3822,"sla_jo":10,"jt":10,"retard":-49,"is_open":0,"dt_created":"2026-03-26","semaine":"W21","link":""},{"wo":"WO-000844046","branch":"Lille","machine":"SK75","client":"ENVIE NORD","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Refurb to Order","valeur":7222.28,"sla_jo":10,"jt":2,"retard":-45,"is_open":0,"dt_created":"2026-03-26","semaine":"W21","link":""},{"wo":"WO-000824623","branch":"Paris-Ouest","machine":"M316","client":"GOODRICH ACTUATION SYSTEMS","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":28226.12,"sla_jo":10,"jt":42,"retard":-98,"is_open":1,"dt_created":"2026-03-23","semaine":"W21","link":""},{"wo":"WO-000800648","branch":"Rouen","machine":"SK300","client":"Technicentre quatre mares N°41","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":21185.06,"sla_jo":10,"jt":14,"retard":-2,"is_open":0,"dt_created":"2026-03-12","semaine":"W21","link":""},{"wo":"WO-000800657","branch":"Rouen","machine":"SK300","client":"technicentre quatre mares 42","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":21185.06,"sla_jo":10,"jt":22,"retard":-2,"is_open":0,"dt_created":"2026-03-12","semaine":"W21","link":""},{"wo":"WO-000789522","branch":"Lille","machine":"M104","client":"VITRAGES ISOLANT DU NORD - VIN","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":4589.98,"sla_jo":10,"jt":51,"retard":-38,"is_open":1,"dt_created":"2026-03-10","semaine":"W21","link":""},{"wo":"WO-000789474","branch":"Annecy","machine":"SK150","client":"TECHNICENTRE - AURA CHAMBERY","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":10411.9,"sla_jo":10,"jt":51,"retard":-2,"is_open":1,"dt_created":"2026-03-10","semaine":"W21","link":""},{"wo":"WO-000789477","branch":"Annecy","machine":"M104","client":"TECHNICENTRE - AURA CHAMBERY","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":2250.47,"sla_jo":10,"jt":14,"retard":-57,"is_open":0,"dt_created":"2026-03-10","semaine":"W21","link":""},{"wo":"WO-000951568","branch":"Toulouse","machine":"M102","client":"GOODRICH AEROSPACE EUROPE SAS","statut":"issue item number","overdue":"+30 days","seg":"Stocked Machines","valeur":9880,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000951590","branch":"Toulouse","machine":"M102","client":"GOODRICH AEROSPACE EUROPE SAS","statut":"issue item number","overdue":"+30 days","seg":"Stocked Machines","valeur":9568,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000802567","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT COCLOIS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-18,"is_open":0,"dt_created":"2026-03-16","semaine":"W21","link":""},{"wo":"WO-000802576","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT PERRIGNY","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-18,"is_open":0,"dt_created":"2026-03-16","semaine":"W21","link":""},{"wo":"WO-000802572","branch":"Troyes","machine":"M190","client":"KLEBER MALECOT SOUCY","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3843.93,"sla_jo":10,"jt":30,"retard":-24,"is_open":0,"dt_created":"2026-03-16","semaine":"W21","link":""},{"wo":"WO-000752450","branch":"Paris-Nord","machine":"M312","client":"RATP RDS LES BORDS DE MARNE B","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":9414.15,"sla_jo":10,"jt":60,"retard":-143,"is_open":1,"dt_created":"2026-02-25","semaine":"W21","link":""},{"wo":"WO-000737539","branch":"Paris-Nord","machine":"M713","client":"SP DEFENSE","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":9549.93,"sla_jo":10,"jt":1,"retard":-83,"is_open":0,"dt_created":"2026-02-20","semaine":"W21","link":""},{"wo":"WO-000738784","branch":"Paris-Nord","machine":"M312","client":"RATP MRF UDM MF77- VMI PLEYEL","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":8865.09,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"dt_created":"2026-02-23","semaine":"W21","link":""},{"wo":"WO-000738710","branch":"Paris-Nord","machine":"M312","client":"RATP MRF FONTENAY APPAREILLAGE","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":8651.89,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"dt_created":"2026-02-23","semaine":"W21","link":""},{"wo":"WO-000738779","branch":"Paris-Nord","machine":"M312","client":"RATP MRF ITALIE AMT CHOISY","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":8865.48,"sla_jo":10,"jt":62,"retard":-73,"is_open":1,"dt_created":"2026-02-23","semaine":"W21","link":""},{"wo":"WO-000738777","branch":"Paris-Nord","machine":"M315","client":"RATP MRF UM MF67/TW DESNOUETTES","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":18149.56,"sla_jo":10,"jt":5,"retard":-69,"is_open":0,"dt_created":"2026-02-23","semaine":"W21","link":""},{"wo":"WO-000757243","branch":"Montpellier","machine":"M104","client":"IMPRESSIONS DE L'ENCLOS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":3083.99,"sla_jo":10,"jt":9,"retard":-70,"is_open":0,"dt_created":"2026-02-26","semaine":"W21","link":""},{"wo":"WO-000737193","branch":"Pau","machine":"M312","client":"SAFRAN HELICOPTER ENGINES SAS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":18328.83,"sla_jo":10,"jt":1,"retard":-67,"is_open":0,"dt_created":"2026-02-20","semaine":"W21","link":""},{"wo":"WO-000674480","branch":"Metz","machine":"M316","client":"SA LINDAL FRANCE","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":10032.23,"sla_jo":10,"jt":78,"retard":-93,"is_open":1,"dt_created":"2026-01-30","semaine":"W21","link":""},{"wo":"WO-000673996","branch":"Toulouse","machine":"M100","client":"EIV QUERCY CORREZE","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":1101.21,"sla_jo":10,"jt":3,"retard":-20,"is_open":0,"dt_created":"2026-01-30","semaine":"W21","link":""},{"wo":"WO-000673998","branch":"Toulouse","machine":"M212","client":"EIV QUERCY CORREZE","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":2976.87,"sla_jo":10,"jt":78,"retard":-88,"is_open":1,"dt_created":"2026-01-30","semaine":"W21","link":""},{"wo":"WO-000909629","branch":"Bordeaux","machine":"ESK000","client":"GRAFFEUILLE ETS SAS","statut":"Stock Issue","overdue":"+30 days","seg":"Buy to Order","valeur":43162.47,"sla_jo":60,"jt":22,"retard":-2,"is_open":1,"dt_created":"2026-04-20","semaine":"W21","link":""},{"wo":"WO-000657698","branch":"Vierzon","machine":"M713","client":"ESPACE AUTO (WARSEMANN)","statut":"in preparation W21","overdue":"+30 days","seg":"Stocked Machines","valeur":20029.88,"sla_jo":10,"jt":81,"retard":-83,"is_open":1,"dt_created":"2026-01-27","semaine":"W21","link":""},{"wo":"WO-000797799","branch":"Rouen","machine":"M245","client":"TECHNICENTRE QUATRE MARES","statut":"Stock Issue","overdue":"+30 days","seg":"Buy to Order","valeur":51038,"sla_jo":60,"jt":50,"retard":-113,"is_open":1,"dt_created":"2026-03-11","semaine":"W21","link":""},{"wo":"WO-000590546","branch":"Dijon","machine":"M312","client":"FRAMATOME","statut":"Stock Issue","overdue":"+30 days","seg":"Stocked Machines","valeur":14076.01,"sla_jo":10,"jt":97,"retard":-179,"is_open":1,"dt_created":"2026-01-05","semaine":"W21","link":""},{"wo":"WO-000972715","branch":"Lille","machine":"C200","client":"VKR FRANCE","statut":"customer machines no need","overdue":"15-30 days","seg":"Customer's Own Machine","valeur":15660.01,"sla_jo":14,"jt":7,"retard":-2,"is_open":1,"dt_created":"2026-05-11","semaine":"W21","link":""},{"wo":"WO-000937568","branch":"Lille","machine":"C200","client":"Maintenance CNPE Gravelines","statut":"customer machines no need","overdue":"15-30 days","seg":"Customer's Own Machine","valeur":6839.93,"sla_jo":14,"jt":16,"retard":-1,"is_open":1,"dt_created":"2026-04-28","semaine":"W21","link":""},{"wo":"WO-000950831","branch":"Paris-Sud","machine":"C500","client":"BERNIER JUVISY","statut":"customer machines no need","overdue":"15-30 days","seg":"Customer's Own Machine","valeur":1898.39,"sla_jo":14,"jt":14,"retard":-2,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000854664","branch":"Strasbourg","machine":"C200","client":"CLAAS Paray les Monial","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000854640","branch":"Strasbourg","machine":"C200","client":"CLAAS charnay les macon","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000854641","branch":"Strasbourg","machine":"C200","client":"CLAAS charnay les macon 2","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":2124.59,"sla_jo":14,"jt":36,"retard":-1,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000854984","branch":"Paris-Sud","machine":"C500","client":"BERNIER ESSONNE","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000854994","branch":"Paris-Sud","machine":"C500","client":"BERNIER ETAMPES","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000855144","branch":"Paris-Sud","machine":"C500","client":"BERNIER MONTARGIS AMILLY","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":1898.39,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000854307","branch":"Paris-Sud","machine":"C100","client":"BERGERAT MONNOYEUR CRC","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":1304.97,"sla_jo":14,"jt":36,"retard":-2,"is_open":1,"dt_created":"2026-03-31","semaine":"W21","link":""},{"wo":"WO-000758106","branch":"Marseille","machine":"C200","client":"Valves Marine Service","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":5004.05,"sla_jo":14,"jt":58,"retard":-2,"is_open":1,"dt_created":"2026-02-27","semaine":"W21","link":""},{"wo":"WO-000946867","branch":"Dijon","machine":"M190","client":"SV-PRO Arbois","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"Stocked Machines","valeur":4269.8,"sla_jo":10,"jt":14,"retard":-3,"is_open":0,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000907909","branch":"Paris-Sud","machine":"M100","client":"SNCF RESEAU INFRAPOLE MONTARGIS","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":1101.21,"sla_jo":10,"jt":7,"retard":-2,"is_open":0,"dt_created":"2026-04-16","semaine":"W21","link":""},{"wo":"WO-000948323","branch":"Nice","machine":"M312","client":"ROBERTET SA","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"Stocked Machines","valeur":11951.94,"sla_jo":10,"jt":29,"retard":-2,"is_open":0,"dt_created":"2026-04-30","semaine":"W21","link":""},{"wo":"WO-000947714","branch":"Strasbourg","machine":"N/A","client":"MERCEDES BENZ TRUCKS MOLSHEIM","statut":"delivered, WO unscheduled","overdue":"15-30 days","seg":"","valeur":939.45,"sla_jo":14,"jt":10,"retard":-2,"is_open":0,"dt_created":"2026-04-29","semaine":"W21","link":""},{"wo":"WO-000907354","branch":"Paris-Nord","machine":"N/A","client":"ASTERYA","statut":"delivered, WO unscheduled","overdue":"+30 days","seg":"","valeur":1880.52,"sla_jo":14,"jt":4,"retard":-32,"is_open":0,"dt_created":"2026-04-16","semaine":"W21","link":""},{"wo":"WO-000989743","branch":"Paris-Sud","machine":"C500","client":"JMD ETIQUETTES","statut":"customer machines no need","overdue":"+30 days","seg":"Customer's Own Machine","valeur":4654.07,"sla_jo":14,"jt":5,"retard":-2,"is_open":1,"dt_created":"2026-05-13","semaine":"W21","link":""},{"wo":"WO-000951687","branch":"Lyon","machine":"M100","client":"SNCF RESEAU MACON","statut":"in preparation W21","overdue":"15-30 days","seg":"Stocked Machines","valeur":1412.32,"sla_jo":10,"jt":14,"retard":-2,"is_open":1,"dt_created":"2026-04-30","semaine":"W21","link":""}];
+
+// ═══════════════════════════════════════════════════════════════
+// CALCUL KPI
+// ═══════════════════════════════════════════════════════════════
+function calcKPI(rows) {
+  const total = rows.length;
+  if (!total) return null;
+  const livres = rows.filter(r=>r.statut===DONE).length;
+  const si     = rows.filter(r=>r.statut===ISSUE).length;
+  const prep   = rows.filter(r=>r.statut===PREP).length;
+  const open   = rows.filter(r=>r.is_open===1).length;
+  const ts     = total>0 ? livres/total*100 : 0;
+  const tss_n  = rows.filter(r=>r.statut===DONE && r.retard!==null && r.retard<=0).length;
+  const tss    = total>0 ? tss_n/total*100 : 0;
+  const jts    = rows.map(r=>r.jt).filter(v=>v!==null&&v!==undefined);
+  const moy_jt = jts.length>0 ? jts.reduce((a,b)=>a+b,0)/jts.length : 0;
+  const med_jt = jts.length>0 ? [...jts].sort((a,b)=>a-b)[Math.floor(jts.length/2)] : 0;
+  const max_jt = jts.length>0 ? Math.max(...jts) : 0;
+  const val_tot= rows.reduce((s,r)=>s+(r.valeur||0),0);
+  const val_si = rows.filter(r=>r.statut===ISSUE).reduce((s,r)=>s+(r.valeur||0),0);
+  const urg4   = rows.filter(r=>r.overdue==='4-7 days').length;
+  const urg8   = rows.filter(r=>r.overdue==='8-14 days').length;
+  const urg15  = rows.filter(r=>r.overdue==='15-30 days').length;
+  const urg30  = rows.filter(r=>r.overdue==='+30 days').length;
+  return {total,livres,si,prep,open,ts,tss,tss_n,moy_jt,med_jt,max_jt,val_tot,val_si,urg4,urg8,urg15,urg30};
+}
+
+function getAllRows() {
+  return Object.values(DB).flat();
+}
+function getSemaines() {
+  return Object.keys(DB).sort();
+}
+function getLastSemaine() {
+  const sems = getSemaines();
+  return sems.length>0 ? sems[sems.length-1] : null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const lastSem = getLastSemaine();
+  const rows = lastSem ? DB[lastSem] : [];
+  const k = calcKPI(rows);
+  if (!k) return;
+
+  document.getElementById('badge-week').textContent = lastSem ? `${lastSem}  ·  ${k.total} WO` : 'W— · Aucune donnée';
+  document.getElementById('k-ts').textContent    = k.ts.toFixed(1)+' %';
+  document.getElementById('k-ts-sub').textContent= `${k.livres} livrés / ${k.total} WO`;
+  document.getElementById('k-tss').textContent   = k.tss.toFixed(1)+' %';
+  document.getElementById('k-tss-sub').textContent= `${k.tss_n} dans les délais promis`;
+  document.getElementById('k-si').textContent    = k.si+' WO';
+  document.getElementById('k-si-sub').textContent= `Bloqué · ${(k.val_si/1000).toFixed(0)}k €`;
+  document.getElementById('k-open').textContent  = k.open+' WO';
+  document.getElementById('k-jt').textContent    = k.moy_jt.toFixed(0)+' jo';
+  document.getElementById('k-jt-sub').textContent= `Médiane ${k.med_jt.toFixed(0)}jo · Max ${k.max_jt}jo`;
+  document.getElementById('k-prep').textContent  = k.prep+' WO';
+  document.getElementById('k-urg4').textContent  = k.urg4+' WO';
+  document.getElementById('k-val').textContent   = (k.val_tot/1000).toFixed(0)+'k €';
+
+  // Overdue
+  function ovSub(n,t){ return n>0 ? (n/t*100).toFixed(0)+' % des WO' : '—';}
+  document.getElementById('ov-4').textContent  = k.urg4;
+  document.getElementById('ov-4s').textContent = ovSub(k.urg4,k.total);
+  document.getElementById('ov-8').textContent  = k.urg8;
+  document.getElementById('ov-8s').textContent = ovSub(k.urg8,k.total);
+  document.getElementById('ov-15').textContent = k.urg15;
+  document.getElementById('ov-15s').textContent= ovSub(k.urg15,k.total);
+  document.getElementById('ov-30').textContent = k.urg30;
+  document.getElementById('ov-30s').textContent= ovSub(k.urg30,k.total);
+
+  // Agences
+  const branches = [...new Set(rows.map(r=>r.branch))].sort();
+  const agData = branches.map(b=>{
+    const brows=rows.filter(r=>r.branch===b);
+    const nb=brows.length, liv=brows.filter(r=>r.statut===DONE).length;
+    const si_b=brows.filter(r=>r.statut===ISSUE).length;
+    const jts_b=brows.map(r=>r.jt).filter(v=>v!=null);
+    const dm=jts_b.length>0?jts_b.reduce((a,b)=>a+b,0)/jts_b.length:null;
+    const ts_b=nb>0?liv/nb*100:0;
+    return {b,nb,liv,si_b,dm,ts_b};
+  }).sort((a,b)=>b.nb-a.nb);
+
+  const agTbody = document.querySelector('#tbl-agences tbody');
+  agTbody.innerHTML = agData.map(ag=>{
+    const tsColor = ag.ts_b>=60?'var(--green)':ag.ts_b>=35?'var(--amber)':'var(--red)';
+    const tsBg = ag.ts_b>=60?'var(--green-l)':ag.ts_b>=35?'var(--amber-l)':'var(--red-l)';
+    return `<tr>
+      <td><strong>${ag.b}</strong></td>
+      <td style="text-align:center;font-weight:600;color:var(--blue)">${ag.nb}</td>
+      <td style="text-align:center">${ag.si_b>0?`<span style="color:var(--red);font-weight:700">${ag.si_b}</span>`:'—'}</td>
+      <td style="text-align:center;color:${ag.dm&&ag.dm>20?'var(--amber)':'var(--t2)'}">${ag.dm?ag.dm.toFixed(0)+' jo':'—'}</td>
+      <td><span style="background:${tsBg};color:${tsColor};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">${ag.ts_b.toFixed(0)} %</span></td>
+    </tr>`;
+  }).join('');
+
+  // Statuts bars
+  const statDefs = [
+    {key:DONE, label:'Livré / WO ouvert', color:'var(--green)'},
+    {key:PREP, label:'En préparation', color:'var(--amber)'},
+    {key:ISSUE, label:'Stock Issue', color:'var(--red)'},
+    {key:'customer machines no need', label:'Machine client', color:'var(--gray)'},
+    {key:'issue item number', label:'Issue item', color:'var(--purple)'},
+  ];
+  const statBarsEl = document.getElementById('stat-bars');
+  statBarsEl.innerHTML = statDefs.map(s=>{
+    const cnt = rows.filter(r=>r.statut===s.key).length;
+    const pct = k.total>0?cnt/k.total*100:0;
+    return `<div class="stat-row">
+      <div class="stat-label" style="font-size:11px">${s.label}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct}%;background:${s.color}"></div></div>
+      <div class="stat-count">${cnt}</div>
+      <div class="stat-pct">${pct.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+
+  // Donut chart statuts
+  if (charts.statuts) charts.statuts.destroy();
+  const ctx = document.getElementById('chart-statuts').getContext('2d');
+  charts.statuts = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels: statDefs.map(s=>s.label),
+      datasets:[{
+        data: statDefs.map(s=>rows.filter(r=>r.statut===s.key).length),
+        backgroundColor:['#16A34A','#D97706','#DC2626','#6B7280','#7C3AED'],
+        borderWidth:0,hoverOffset:4
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`${d.label}: ${d.raw} WO`}}}}
+  });
+
+  // Stock Issue table
+  const siRows = rows.filter(r=>r.statut===ISSUE).sort((a,b)=>{
+    const ov={'4-7 days':0,'8-14 days':1,'15-30 days':2,'+30 days':3};
+    return (ov[a.overdue]||9)-(ov[b.overdue]||9);
+  });
+  const siTbody = document.querySelector('#tbl-si tbody');
+  siTbody.innerHTML = siRows.map(r=>{
+    const ovBadge = ovBadgeHTML(r.overdue);
+    const slaBadge = slaColor(r.sla_jo);
+    const jtCol = r.jt>r.sla_jo?`<span style="color:var(--red);font-weight:700">${r.jt} jo</span>`
+                : r.jt>r.sla_jo*.8?`<span style="color:var(--amber);font-weight:600">${r.jt} jo</span>`
+                : `${r.jt||'—'} jo`;
+    return `<tr>
+      <td>${ovBadge}</td>
+      <td><strong>${r.branch}</strong></td>
+      <td><code style="background:var(--blue-l);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:11px">${r.machine}</code></td>
+      <td><span style="${slaBadge}">${r.sla_jo} jo</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${r.client}</td>
+      <td>${r.link?`<a href="${r.link}" target="_blank" class="wo-link">${r.wo}</a>`:`<span class="mono" style="font-size:11px;color:var(--blue)">${r.wo}</span>`}</td>
+      <td>${jtCol}</td>
+      <td style="text-align:right;font-size:12px;color:var(--t2)">${r.valeur>0?r.valeur.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function ovBadgeHTML(ov) {
+  const m = {
+    '4-7 days':['badge-red','4-7 j'],
+    '8-14 days':['badge-amber','8-14 j'],
+    '15-30 days':['badge-blue','15-30 j'],
+    '+30 days':['badge-gray','+30 j']
+  };
+  const [cls,lbl] = m[ov]||['badge-gray',ov];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+function slaColor(sla) {
+  if (sla<=10) return 'background:var(--green-l);color:var(--green);padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600';
+  if (sla<=30) return 'background:var(--amber-l);color:var(--amber);padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600';
+  return 'background:var(--red-l);color:var(--red);padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600';
+}
+function statutBadgeHTML(s) {
+  const m = {
+    [DONE]:'<span class="badge badge-green">🟢 Livré</span>',
+    [PREP]:'<span class="badge badge-amber">🟡 En prépa</span>',
+    [ISSUE]:'<span class="badge badge-red">🔴 Stock Issue</span>',
+    'customer machines no need':'<span class="badge badge-gray">⚪ Machine client</span>',
+    'issue item number':'<span class="badge badge-purple">🟠 Issue item</span>',
+  };
+  return m[s]||`<span class="badge badge-gray">${s}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ÉVOLUTION KPI
+// ═══════════════════════════════════════════════════════════════
+function renderEvolution() {
+  const sems = getSemaines();
+  if (!sems.length) return;
+  const kpis = sems.map(s=>({sem:s,...calcKPI(DB[s])}));
+
+  // En-têtes colonnes
+  const hdr = document.getElementById('evol-hdr');
+  hdr.innerHTML = '<th>Indicateur</th>' + sems.map(s=>`<th style="${s===getLastSemaine()?'background:#16A34A':'background:var(--navy2);color:#93C5FD'}">${s}</th>`).join('');
+
+  function evolRow(label,fn,fmt='v',section=false) {
+    const vals = kpis.map(k=>fn(k));
+    const cells = vals.map((v,i)=>{
+      const isCur = sems[i]===getLastSemaine();
+      const disp = fmt==='pct'?v.toFixed(1)+' %':fmt==='jo'?v.toFixed(1)+' jo':v;
+      return `<td class="${isCur?'evol-cur':''}">${v!=null&&v!==''?disp:'—'}</td>`;
+    }).join('');
+    if(section) return `<tr class="evol-section-hdr"><td colspan="${sems.length+1}">${label}</td></tr>`;
+    return `<tr><td>${label}</td>${cells}</tr>`;
+  }
+
+  document.getElementById('evol-body').innerHTML = [
+    evolRow('▌ VOLUMES','',0,true),
+    evolRow('Total WO',k=>k.total),
+    evolRow('WO livrés',k=>k.livres),
+    evolRow('Stock Issue',k=>k.si),
+    evolRow('En préparation',k=>k.prep),
+    evolRow('▌ TAUX DE SERVICE','',0,true),
+    evolRow('Taux service base (%)',k=>k.ts,'pct'),
+    evolRow('Taux service délais (%)',k=>k.tss,'pct'),
+    evolRow('▌ DÉLAIS (jo)','',0,true),
+    evolRow('Délai moyen',k=>k.moy_jt,'jo'),
+    evolRow('Délai médian',k=>k.med_jt,'jo'),
+    evolRow('▌ VALEUR (k€)','',0,true),
+    evolRow('Valeur portefeuille',k=>Math.round(k.val_tot/1000)),
+    evolRow('Valeur SI bloquée',k=>Math.round(k.val_si/1000)),
+  ].join('');
+
+  // TS par agence
+  const allBranches = [...new Set(getAllRows().map(r=>r.branch))].sort();
+  const tsHdr = document.getElementById('ts-ag-hdr');
+  tsHdr.innerHTML = '<th>Agence</th>' + sems.map(s=>`<th style="${s===getLastSemaine()?'background:#16A34A':'background:var(--navy2);color:#93C5FD'}">${s}</th>`).join('');
+  const tsBody = document.getElementById('ts-ag-body');
+  tsBody.innerHTML = allBranches.map(ag=>{
+    const cells = sems.map((s,i)=>{
+      const brows = DB[s].filter(r=>r.branch===ag);
+      const nb=brows.length, liv=brows.filter(r=>r.statut===DONE).length;
+      const ts_v = nb>0?liv/nb*100:null;
+      const isCur=sems[i]===getLastSemaine();
+      if(ts_v===null) return `<td class="${isCur?'evol-cur':''}">—</td>`;
+      const color=ts_v>=60?'var(--green)':ts_v>=35?'var(--amber)':'var(--red)';
+      return `<td class="${isCur?'evol-cur':''}" style="color:${color};font-weight:700">${ts_v.toFixed(1)} %</td>`;
+    }).join('');
+    return `<tr><td>${ag}</td>${cells}</tr>`;
+  }).join('');
+
+  // Graphiques évolution
+  const labels = sems;
+  const tsVals = kpis.map(k=>+k.ts.toFixed(1));
+  const tssVals = kpis.map(k=>+k.tss.toFixed(1));
+  const jtVals = kpis.map(k=>+k.moy_jt.toFixed(1));
+  const siVals = kpis.map(k=>k.si);
+  const prepVals = kpis.map(k=>k.prep);
+  const livVals = kpis.map(k=>k.livres);
+
+  if(charts.tsEvol) charts.tsEvol.destroy();
+  charts.tsEvol = new Chart(document.getElementById('chart-ts-evol').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'TS base %',data:tsVals,borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.3,pointRadius:5},
+      {label:'TS délais %',data:tssVals,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.05)',fill:true,tension:.3,pointRadius:5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{min:0,max:100}}}
+  });
+  if(charts.jtEvol) charts.jtEvol.destroy();
+  charts.jtEvol = new Chart(document.getElementById('chart-jt-evol').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Délai moy. (jo)',data:jtVals,borderColor:'#D97706',backgroundColor:'rgba(217,119,6,.1)',fill:true,tension:.3,pointRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}}}
+  });
+  if(charts.woEvol) charts.woEvol.destroy();
+  charts.woEvol = new Chart(document.getElementById('chart-wo-evol').getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Livrés',data:livVals,backgroundColor:'rgba(22,163,74,.8)'},
+      {label:'En prépa',data:prepVals,backgroundColor:'rgba(217,119,6,.8)'},
+      {label:'Stock Issue',data:siVals,backgroundColor:'rgba(220,38,38,.8)'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{stacked:true},y:{stacked:true}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUIVI WO
+// ═══════════════════════════════════════════════════════════════
+function initWOFilters() {
+  const all = getAllRows();
+  const sems = [...new Set(all.map(r=>r.semaine))].sort();
+  const branches = [...new Set(all.map(r=>r.branch))].sort();
+  const machines = [...new Set(all.map(r=>r.machine))].sort();
+  const selSem = document.getElementById('f-sem');
+  const selBr = document.getElementById('f-branch');
+  const selMac = document.getElementById('f-machine');
+  selSem.innerHTML = '<option value="">Toutes semaines</option>'+sems.map(s=>`<option value="${s}">${s}</option>`).join('');
+  selBr.innerHTML  = '<option value="">Toutes agences</option>'+branches.map(b=>`<option value="${b}">${b}</option>`).join('');
+  selMac.innerHTML = '<option value="">Toutes machines</option>'+machines.map(m=>`<option value="${m}">${m}</option>`).join('');
+  // Pré-sélectionner la semaine actuelle
+  const lastSem = getLastSemaine();
+  if(lastSem) selSem.value=lastSem;
+}
+
+function renderWO() {
+  const fSem   = document.getElementById('f-sem').value;
+  const fBr    = document.getElementById('f-branch').value;
+  const fMac   = document.getElementById('f-machine').value;
+  const fStat  = document.getElementById('f-statut').value;
+  const fOv    = document.getElementById('f-ov').value;
+  const fQ     = document.getElementById('f-search').value.toLowerCase();
+  const all    = getAllRows();
+  let filtered = all.filter(r=>
+    (!fSem  || r.semaine===fSem) &&
+    (!fBr   || r.branch===fBr) &&
+    (!fMac  || r.machine===fMac) &&
+    (!fStat || r.statut===fStat) &&
+    (!fOv   || r.overdue===fOv) &&
+    (!fQ    || (r.wo+r.client+r.branch+r.machine).toLowerCase().includes(fQ))
+  );
+
+  const total = filtered.length;
+  const today = new Date();
+  document.getElementById('wo-count').textContent = `${total} WO`;
+  const start = (woPage-1)*WO_PER_PAGE;
+  const page = filtered.slice(start, start+WO_PER_PAGE);
+
+  const tbody = document.getElementById('wo-body');
+  tbody.innerHTML = page.map(r=>{
+    const jt_disp = r.is_open ? (r.jt?`<span style="color:${r.jt>30?'var(--red)':r.jt>14?'var(--amber)':'var(--t2)'};font-weight:600">${r.jt} jo</span>`:'—') : '—';
+    const trt_disp= !r.is_open ? (r.jt?`<span style="color:${r.jt>r.sla_jo?'var(--red)':r.jt>r.sla_jo*.8?'var(--amber)':'var(--green)'};font-weight:600">${r.jt} jo</span>`:'—') : '—';
+    const ret_disp= r.retard!=null ? `<span style="color:${r.retard>0?'var(--red)':r.retard<0?'var(--green)':'var(--t2)'};font-weight:${Math.abs(r.retard)>3?700:400}">${r.retard>0?'+':''}${r.retard} jo</span>` : '—';
+    return `<tr>
+      <td>${r.link?`<a href="${r.link}" target="_blank" class="wo-link">${r.wo}</a>`:`<span class="mono" style="font-size:11px;color:var(--blue)">${r.wo}</span>`}</td>
+      <td><span style="background:var(--blue-l);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600">${r.semaine||'—'}</span></td>
+      <td><strong style="font-size:12px">${r.branch}</strong></td>
+      <td><code style="background:var(--surface);padding:2px 5px;border-radius:4px;font-size:11px">${r.machine}</code></td>
+      <td><span style="${slaColor(r.sla_jo)}">${r.sla_jo} jo</span></td>
+      <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.client}</td>
+      <td>${statutBadgeHTML(r.statut)}</td>
+      <td>${ovBadgeHTML(r.overdue)}</td>
+      <td style="text-align:center">${jt_disp}</td>
+      <td style="text-align:center">${trt_disp}</td>
+      <td style="text-align:center">${ret_disp}</td>
+      <td style="text-align:right;font-size:12px;color:var(--t2)">${r.valeur>0?r.valeur.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const pages = Math.ceil(total/WO_PER_PAGE);
+  const pag = document.getElementById('wo-pag');
+  pag.innerHTML = `<span>${start+1}–${Math.min(start+WO_PER_PAGE,total)} sur ${total}</span>`;
+  if(woPage>1) pag.innerHTML += `<button class="btn" onclick="woPage--;renderWO()">‹ Préc.</button>`;
+  pag.innerHTML += `<span style="color:var(--t1)">Page ${woPage}/${pages||1}</span>`;
+  if(woPage<pages) pag.innerHTML += `<button class="btn" onclick="woPage++;renderWO()">Suiv. ›</button>`;
+}
+
+function resetFilters() {
+  ['f-sem','f-branch','f-machine','f-statut','f-ov'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-search').value='';
+  // Re-sélectionner dernière semaine
+  const lastSem = getLastSemaine();
+  if(lastSem) document.getElementById('f-sem').value=lastSem;
+  woPage=1; renderWO();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LISTE PRÉPARATION
+// ═══════════════════════════════════════════════════════════════
+function initPrepFilters() {
+  const all = getAllRows();
+  const sems=[...new Set(all.map(r=>r.semaine))].sort();
+  const branches=[...new Set(all.map(r=>r.branch))].sort();
+  const s1=document.getElementById('f-prep-sem');
+  const s2=document.getElementById('f-prep-branch');
+  s1.innerHTML='<option value="">Toutes semaines</option>'+sems.map(s=>`<option value="${s}">${s}</option>`).join('');
+  s2.innerHTML='<option value="">Toutes agences</option>'+branches.map(b=>`<option value="${b}">${b}</option>`).join('');
+  const lastSem=getLastSemaine();
+  if(lastSem) s1.value=lastSem;
+}
+
+function renderPrep() {
+  const fSem  = document.getElementById('f-prep-sem').value;
+  const fBr   = document.getElementById('f-prep-branch').value;
+  let rows = getAllRows().filter(r=>
+    [ISSUE, PREP].includes(r.statut) &&
+    (!fSem || r.semaine===fSem) &&
+    (!fBr  || r.branch===fBr)
+  );
+  const ovOrd={'4-7 days':0,'8-14 days':1,'15-30 days':2,'+30 days':3};
+  rows.sort((a,b)=>(ovOrd[a.overdue]||9)-(ovOrd[b.overdue]||9)||(b.jt||0)-(a.jt||0));
+  document.getElementById('prep-count').textContent=`${rows.length} WO à préparer`;
+
+  // Résumé machines
+  const machines=[...new Set(rows.map(r=>r.machine))].sort();
+  const macTbody=document.querySelector('#tbl-machines tbody');
+  macTbody.innerHTML=machines.map(m=>{
+    const mrows=rows.filter(r=>r.machine===m);
+    const nb=mrows.length,si=mrows.filter(r=>r.statut===ISSUE).length,pr=mrows.filter(r=>r.statut===PREP).length;
+    const sla=mrows[0]?.sla_jo||14;
+    const ags=[...new Set(mrows.map(r=>r.branch))].join(', ');
+    return `<tr>
+      <td><code style="background:var(--blue-l);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">${m}</code></td>
+      <td style="text-align:center;font-weight:700;color:var(--blue)">${nb}</td>
+      <td style="text-align:center">${si>0?`<span style="color:var(--red);font-weight:700">${si}</span>`:'—'}</td>
+      <td style="text-align:center">${pr>0?`<span style="color:var(--amber);font-weight:700">${pr}</span>`:'—'}</td>
+      <td><span style="${slaColor(sla)}">${sla} jo</span></td>
+      <td style="font-size:12px;color:var(--t2)">${ags}</td>
+    </tr>`;
+  }).join('');
+
+  // Liste WO
+  const prepBody=document.getElementById('prep-body');
+  prepBody.innerHTML=rows.map(r=>{
+    const pct=r.jt&&r.sla_jo?r.jt/r.sla_jo*100:null;
+    let vsColor,vsTxt;
+    if(!pct){vsColor='var(--gray)';vsTxt='—';}
+    else if(pct<=80){vsColor='var(--green)';vsTxt='✅ Excellent';}
+    else if(pct<=100){vsColor='var(--green)';vsTxt='✓ Dans SLA';}
+    else if(pct<=130){vsColor='var(--amber)';vsTxt='⚠ Proche';}
+    else{vsColor='var(--red)';vsTxt='❌ Hors SLA';}
+    return `<tr>
+      <td>${ovBadgeHTML(r.overdue)}</td>
+      <td><strong style="font-size:12px">${r.branch}</strong></td>
+      <td><code style="background:var(--blue-l);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:11px">${r.machine}</code></td>
+      <td><span style="${slaColor(r.sla_jo)}">${r.sla_jo} jo</span></td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.client}</td>
+      <td>${r.link?`<a href="${r.link}" target="_blank" class="wo-link">${r.wo}</a>`:`<span class="mono" style="font-size:11px;color:var(--blue)">${r.wo}</span>`}</td>
+      <td style="text-align:center">${r.jt?`<span style="color:${r.jt>r.sla_jo?'var(--red)':'var(--t2)'};font-weight:600">${r.jt} jo</span>`:'—'}</td>
+      <td><span style="color:${vsColor};font-weight:600;font-size:12px">${vsTxt}</span></td>
+      <td style="text-align:right;font-size:12px;color:var(--t2)">${r.valeur>0?r.valeur.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMPORT FICHIER EXCEL
+// ═══════════════════════════════════════════════════════════════
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if(file) handleFile(file);
+}
+document.getElementById('drop-zone').addEventListener('dragover',e=>{e.preventDefault();document.getElementById('drop-zone').classList.add('drag');});
+document.getElementById('drop-zone').addEventListener('dragleave',()=>document.getElementById('drop-zone').classList.remove('drag'));
+
+function handleFile(file) {
+  if(!file) return;
+  const semInput = document.getElementById('semaine-input').value.trim().toUpperCase();
+  if(!semInput || !semInput.match(/^W\d+$/)) {
+    toast('Saisissez le numéro de semaine (ex: W22) avant d\'importer', 'error'); return;
+  }
+  const prog = document.getElementById('upload-progress');
+  const fill = document.getElementById('upload-fill');
+  prog.style.display='block'; fill.style.width='20%';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    fill.style.width='60%';
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+      // Chercher la feuille d'export BI
+      const sheetName = wb.SheetNames.find(s=>s.toLowerCase().includes('export')||s.toLowerCase().includes('placement')) || wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(ws, {raw:false, dateNF:'YYYY-MM-DD'});
+      fill.style.width='80%';
+
+      // Parser les colonnes
+      const today = new Date();
+      function jouvres(d1,d2) {
+        if(!d1||!d2) return null;
+        const t1=new Date(d1),t2=new Date(d2); let cnt=0,cur=new Date(t1);
+        if(t2<t1) return -jouvres(d2,d1);
+        while(cur<t2){cur.setDate(cur.getDate()+1);const d=cur.getDay();if(d!==0&&d!==6)cnt++;}
+        return cnt;
+      }
+
+      const records = json.map(row=>{
+        const statut = (row['Completed Date']||'').trim();
+        const created= row['WO Created On']||null;
+        const booking= row['Booking Date']||null;
+        const promised= row['Time to Promised']||null;
+        const machine= (row['Machine']||'N/A').trim();
+        const isOpen = statut !== DONE ? 1 : 0;
+        const jt = statut===DONE
+          ? jouvres(created, booking)
+          : jouvres(created, today.toISOString().slice(0,10));
+        const retard = jouvres(promised, booking);
+        return {
+          wo:     (row['WO Number']||'').trim(),
+          link:   (row['WO Link']||'').trim(),
+          branch: (row['Branch']||'').trim(),
+          machine,
+          client: (row['Account Name']||'').trim(),
+          tier:   (row['Customer Tier']||'').trim(),
+          statut,
+          overdue:(row['Overdue Interval']||'').trim(),
+          seg:    (row['Segmentation']||'').trim(),
+          valeur: parseFloat(row['Total Van'])||0,
+          sla_jo: getSLA(machine),
+          jt, retard, is_open:isOpen,
+          agr_type:(row['Agreem. Type']||'').trim(),
+          dt_created:created?String(created).slice(0,10):null,
+          dt_booking:booking?String(booking).slice(0,10):null,
+          semaine: semInput,
+        };
+      }).filter(r=>r.wo&&r.branch);
+
+      DB[semInput] = records;
+      saveDB();
+      fill.style.width='100%';
+      setTimeout(()=>{ prog.style.display='none'; fill.style.width='0'; },600);
+
+      toast(`${records.length} WO importés — Semaine ${semInput} ✓`, 'success');
+      updateImportHistory();
+      refreshAll();
+    } catch(err) {
+      prog.style.display='none';
+      toast('Erreur de lecture : '+err.message, 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function updateImportHistory() {
+  const hist = document.getElementById('import-history');
+  const sems = getSemaines().reverse();
+  if(!sems.length) {
+    hist.innerHTML='<div class="empty-state" style="padding:30px 0"><div class="empty-icon">📭</div><div class="empty-title">Aucun import effectué</div></div>';
+    return;
+  }
+  hist.innerHTML = sems.map(s=>{
+    const k=calcKPI(DB[s]);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="background:var(--navy);color:#93C5FD;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--mono)">${s}</span>
+      <span style="font-size:13px;font-weight:600">${k.total} WO</span>
+      <span class="badge badge-green">TS ${k.ts.toFixed(1)}%</span>
+      <span class="badge badge-red">${k.si} SI</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--t3)">${(k.val_tot/1000).toFixed(0)}k €</span>
+      <button onclick="deleteSemaine('${s}')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:16px" title="Supprimer">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteSemaine(sem) {
+  if(!confirm(`Supprimer les données ${sem} ?`)) return;
+  delete DB[sem];
+  saveDB();
+  updateImportHistory();
+  refreshAll();
+  toast(`Semaine ${sem} supprimée`, '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='evolution') renderEvolution();
+  if(name==='wo') { initWOFilters(); woPage=1; renderWO(); }
+  if(name==='prep') { initPrepFilters(); renderPrep(); }
+}
+
+function refreshAll() {
+  renderDashboard();
+  // Re-init si déjà sur ces pages
+  if(document.getElementById('page-wo').classList.contains('active')) { initWOFilters(); renderWO(); }
+  if(document.getElementById('page-prep').classList.contains('active')) { initPrepFilters(); renderPrep(); }
+  if(document.getElementById('page-evolution').classList.contains('active')) renderEvolution();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type?' '+type:'');
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+loadDB();
+// Charger W21 si absent
+if(!DB['W21'] || DB['W21'].length===0) {
+  DB['W21'] = W21_DATA;
+  saveDB();
+}
+updateImportHistory();
+refreshAll();
+</script>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div style="max-width:700px;margin:0 auto">
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Gestion des accès utilisateurs</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Créer un accès</button>
+      </div>
+      <div id="users-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Liens de partage</div>
+      <p style="font-size:12.5px;color:var(--t2);margin-bottom:12px;line-height:1.6">Partagez le lien d'un compte viewer directement — la personne accède sans saisir de mot de passe. Fonctionne sur mobile.</p>
+      <div id="share-links"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
